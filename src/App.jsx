@@ -8,15 +8,17 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentSong, setCurrentSong] = useState(null);
+  const [selectedSource, setSelectedSource] = useState({});
+  const [downloadProgress, setDownloadProgress] = useState({});
 
   // 使用音乐搜索和合并功能
   const searchMusic = async (query) => {
     setLoading(true);
     setError(null);
+    setResults([]);
     
     try {
       // 尝试从查询中提取歌手和歌曲名
-      // 这里使用简单的分割，实际应用中可能需要更复杂的解析
       const parts = query.split(' ');
       let singer = '';
       let songName = '';
@@ -148,126 +150,268 @@ function App() {
     }
   };
 
+  // 处理来源选择
+  const handleSourceSelect = (songId, source) => {
+    setSelectedSource(prev => ({
+      ...prev,
+      [songId]: source
+    }));
+  };
+
   // 使用API解析器实现音乐下载
   const handleDownload = async (song) => {
     try {
-      const parser = new APIParser();
-      const result = await parser.parseMusic(song.url);
+      // 获取选中的来源或默认使用第一个来源
+      const selected = selectedSource[song.id] || song.sources?.[0] || song;
       
-      if (result.success) {
-        const { downloadUrl } = result.data;
-        
+      // 从歌曲ID中提取平台信息
+      const platformMatch = selected.id.match(/^(wy|qq|kg|xm)-/);
+      const platform = platformMatch ? platformMatch[1] : 'wy';
+      const songId = selected.id.replace(/^\w+-/, '');
+      
+      // 开始下载前设置进度
+      setDownloadProgress(prev => ({
+        ...prev,
+        [song.id]: 0
+      }));
+      
+      // 通过后端API获取音乐URL
+      const response = await fetch(`http://localhost:5000/api/song/url/multi?id=${songId}&platform=${platform}`);
+      const result = await response.json();
+      
+      if (result.success && result.url) {
         // 创建下载链接
         const link = document.createElement('a');
-        link.href = downloadUrl;
+        link.href = result.url;
         link.download = `${song.title} - ${song.artist}.mp3`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        // 模拟下载完成
+        setTimeout(() => {
+          setDownloadProgress(prev => ({
+            ...prev,
+            [song.id]: 100
+          }));
+          
+          // 3秒后清除进度
+          setTimeout(() => {
+            setDownloadProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[song.id];
+              return newProgress;
+            });
+          }, 3000);
+        }, 1000);
         
         alert(`开始下载: ${song.title} - ${song.artist}`);
       } else {
-        console.error('解析失败:', result.error);
-        // fallback到直接下载
-        const link = document.createElement('a');
-        link.href = song.url;
-        link.download = `${song.title} - ${song.artist}.mp3`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        alert(`开始下载: ${song.title} - ${song.artist}`);
+        console.error('获取下载链接失败:', result.error);
+        alert(`无法获取下载链接: ${song.title} - ${song.artist}`);
+        setDownloadProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[song.id];
+          return newProgress;
+        });
       }
     } catch (err) {
       console.error('下载错误:', err);
-      // fallback到直接下载
-      const link = document.createElement('a');
-      link.href = song.url;
-      link.download = `${song.title} - ${song.artist}.mp3`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      alert(`开始下载: ${song.title} - ${song.artist}`);
+      alert(`下载失败，请稍后重试: ${song.title} - ${song.artist}`);
+      setDownloadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[song.id];
+        return newProgress;
+      });
     }
   };
 
   // 处理音乐预览
-  const handlePreview = (song) => {
-    setCurrentSong(song.id === currentSong?.id ? null : song);
+  const handlePreview = async (song) => {
+    try {
+      // 如果已经在播放当前歌曲，则停止
+      if (currentSong?.id === song.id) {
+        setCurrentSong(null);
+        return;
+      }
+      
+      // 获取选中的来源或默认使用第一个来源
+      const selected = selectedSource[song.id] || song.sources?.[0] || song;
+      
+      // 从歌曲ID中提取平台信息
+      const platformMatch = selected.id.match(/^(wy|qq|kg|xm)-/);
+      const platform = platformMatch ? platformMatch[1] : 'wy';
+      const songId = selected.id.replace(/^\w+-/, '');
+      
+      // 通过后端API获取音乐URL
+      const response = await fetch(`http://localhost:5000/api/song/url/multi?id=${songId}&platform=${platform}`);
+      const result = await response.json();
+      
+      if (result.success && result.url) {
+        // 创建带真实URL的歌曲对象
+        const songWithUrl = {
+          ...song,
+          url: result.url
+        };
+        setCurrentSong(songWithUrl);
+      } else {
+        console.error('获取预览链接失败:', result.error);
+        alert('无法获取预览链接');
+      }
+    } catch (err) {
+      console.error('预览错误:', err);
+      alert('预览失败，请稍后重试');
+    }
+  };
+
+  // 停止预览
+  const handleStopPreview = () => {
+    setCurrentSong(null);
   };
 
   return (
     <div className="container">
-      <header>
-        <h1>音乐解析器</h1>
-        <p>搜索、解析和下载您喜爱的音乐</p>
+      <header className="header">
+        <div className="header-content">
+          <h1 className="header-title">音乐解析器</h1>
+          <p className="header-subtitle">搜索、解析和下载您喜爱的音乐</p>
+          <div className="header-features">
+            <span className="feature-badge">网易云音乐</span>
+            <span className="feature-badge">QQ音乐</span>
+            <span className="feature-badge">酷狗音乐</span>
+            <span className="feature-badge">虾米音乐</span>
+          </div>
+        </div>
       </header>
 
       <form onSubmit={handleSearch} className="search-container">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="输入歌曲名称或歌手"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          required
-        />
-        <button type="submit" className="search-btn">
-          {loading ? <span className="spinner"></span> : '搜索'}
-        </button>
+        <div className="search-box">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="输入歌曲名称或歌手"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            required
+          />
+          <button type="submit" className="search-btn">
+            {loading ? <span className="spinner"></span> : '搜索'}
+          </button>
+        </div>
       </form>
 
-      {error && <div className="error">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <span className="error-icon">⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
 
       <div className="results-container">
-        <h2>搜索结果</h2>
+        <h2 className="results-title">搜索结果</h2>
         {loading ? (
-          <div className="loading">
-            <span className="spinner"></span>
-            <p>正在搜索...</p>
+          <div className="loading-container">
+            <div className="spinner-container">
+              <span className="spinner"></span>
+            </div>
+            <p className="loading-text">正在从多个平台搜索...</p>
           </div>
         ) : results.length > 0 ? (
           results.map((song) => (
-            <div key={song.id} className="result-item">
+            <div key={song.id} className="result-card">
               <div className="song-info">
                 <h3 className="song-title">{song.title}</h3>
                 <p className="song-artist">{song.artist}</p>
                 <p className="song-album">{song.album} · {song.duration}</p>
+                
+                {/* 来源选择 */}
+                {song.sources && song.sources.length > 1 && (
+                  <div className="sources-selector">
+                    <label>选择来源：</label>
+                    <select 
+                      className="source-select"
+                      value={selectedSource[song.id]?.id || song.sources[0].id}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const selectedSourceObj = song.sources.find(s => s.id === selectedId);
+                        if (selectedSourceObj) {
+                          handleSourceSelect(song.id, selectedSourceObj);
+                        }
+                      }}
+                    >
+                      {song.sources.map(source => (
+                        <option key={source.id} value={source.id}>
+                          {source.provider}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {/* 音频播放器 */}
                 {currentSong?.id === song.id && (
-                  <audio className="preview-audio" controls autoPlay>
-                    <source src={song.url} type="audio/mpeg" />
-                    您的浏览器不支持音频播放
-                  </audio>
+                  <div className="audio-player">
+                    <audio controls autoPlay className="preview-audio">
+                      <source src={song.url} type="audio/mpeg" />
+                      您的浏览器不支持音频播放
+                    </audio>
+                    <button 
+                      className="stop-preview-btn"
+                      onClick={handleStopPreview}
+                    >
+                      停止预览
+                    </button>
+                  </div>
                 )}
               </div>
+              
               <div className="action-buttons">
                 <button 
                   className="btn btn-secondary"
                   onClick={() => handlePreview(song)}
+                  disabled={loading}
                 >
                   {currentSong?.id === song.id ? '停止预览' : '预览'}
                 </button>
                 <button 
                   className="btn btn-primary"
                   onClick={() => handleDownload(song)}
+                  disabled={loading || downloadProgress[song.id] !== undefined}
                 >
-                  下载
+                  {downloadProgress[song.id] !== undefined ? (
+                    <span className="download-progress">
+                      {downloadProgress[song.id]}%
+                    </span>
+                  ) : '下载'}
                 </button>
               </div>
             </div>
           ))
         ) : (
           <div className="empty-state">
-            <h3>暂无结果</h3>
-            <p>请输入歌曲名称或歌手进行搜索</p>
+            <div className="empty-icon">🎵</div>
+            <h3 className="empty-title">暂无结果</h3>
+            <p className="empty-description">请输入歌曲名称或歌手进行搜索</p>
+            <div className="empty-suggestions">
+              <span className="suggestion-tag">起风了</span>
+              <span className="suggestion-tag">追光者</span>
+              <span className="suggestion-tag">光年之外</span>
+              <span className="suggestion-tag">平凡之路</span>
+            </div>
           </div>
         )}
       </div>
 
       <footer className="footer">
-        <p>© 2026 音乐解析器 | 仅用于学习和研究目的</p>
-        <p>本网站仅解析和提供合法授权的音乐内容</p>
+        <div className="footer-content">
+          <p className="footer-text">© 2026 音乐解析器 | 仅用于学习和研究目的</p>
+          <p className="footer-disclaimer">本网站仅解析和提供合法授权的音乐内容</p>
+          <div className="footer-links">
+            <a href="#" className="footer-link">关于我们</a>
+            <a href="#" className="footer-link">使用条款</a>
+            <a href="#" className="footer-link">隐私政策</a>
+          </div>
+        </div>
       </footer>
     </div>
   );
