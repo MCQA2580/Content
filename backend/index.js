@@ -1,6 +1,7 @@
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
+const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
+const { search, getMusicUrl } = require('musicfree-api');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,97 +10,218 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// 模拟音乐数据
-const mockMusicData = [
-  {
-    id: 1,
-    title: '起风了',
-    artist: '买辣椒也用券',
-    album: '起风了',
-    duration: '4:11',
-    url: 'https://example.com/music/1.mp3'
-  },
-  {
-    id: 2,
-    title: '追光者',
-    artist: '岑宁儿',
-    album: '夏至未至 电视剧原声带',
-    duration: '3:55',
-    url: 'https://example.com/music/2.mp3'
-  },
-  {
-    id: 3,
-    title: '光年之外',
-    artist: '邓紫棋',
-    album: '光年之外',
-    duration: '3:58',
-    url: 'https://example.com/music/3.mp3'
-  },
-  {
-    id: 4,
-    title: '平凡之路',
-    artist: '朴树',
-    album: '平凡之路',
-    duration: '4:05',
-    url: 'https://example.com/music/4.mp3'
-  },
-  {
-    id: 5,
-    title: '成都',
-    artist: '赵雷',
-    album: '成都',
-    duration: '5:28',
-    url: 'https://example.com/music/5.mp3'
-  }
-];
-
 // 搜索音乐API
-app.get('/api/search', (req, res) => {
+app.get('/api/search', async (req, res) => {
   const { query } = req.query;
   
   if (!query) {
     return res.status(400).json({ error: '搜索关键词不能为空' });
   }
   
-  // 模拟搜索延迟
-  setTimeout(() => {
-    const results = mockMusicData.filter(song => 
-      song.title.includes(query) || 
-      song.artist.includes(query)
-    );
+  try {
+    const result = await NeteaseCloudMusicApi.search({
+      keywords: query,
+      type: 1, // 1: 单曲
+      limit: 10
+    });
+    
+    // 转换结果格式
+    const results = result.body.result.songs.map(song => ({
+      id: song.id,
+      title: song.name,
+      artist: song.artists.map(artist => artist.name).join('/'),
+      album: song.album.name,
+      duration: formatDuration(song.duration),
+      url: `https://music.163.com/song?id=${song.id}`
+    }));
     
     res.json({ results });
-  }, 500);
+  } catch (error) {
+    console.error('搜索错误:', error);
+    res.status(500).json({ error: '搜索失败，请稍后重试' });
+  }
 });
 
 // 获取音乐详情API
-app.get('/api/song/:id', (req, res) => {
+app.get('/api/song/:id', async (req, res) => {
   const { id } = req.params;
-  const song = mockMusicData.find(s => s.id === parseInt(id));
   
-  if (!song) {
-    return res.status(404).json({ error: '歌曲不存在' });
+  try {
+    const result = await NeteaseCloudMusicApi.song_detail({
+      ids: [id]
+    });
+    
+    if (result.body.songs && result.body.songs.length > 0) {
+      const song = result.body.songs[0];
+      const songInfo = {
+        id: song.id,
+        title: song.name,
+        artist: song.artists.map(artist => artist.name).join('/'),
+        album: song.album.name,
+        duration: formatDuration(song.duration),
+        url: `https://music.163.com/song?id=${song.id}`,
+        albumPic: song.album.picUrl
+      };
+      
+      res.json({ song: songInfo });
+    } else {
+      res.status(404).json({ error: '歌曲不存在' });
+    }
+  } catch (error) {
+    console.error('获取详情错误:', error);
+    res.status(500).json({ error: '获取详情失败，请稍后重试' });
   }
-  
-  res.json({ song });
 });
 
-// 解析音乐API（模拟）
-app.get('/api/parse', (req, res) => {
+// 获取音乐URL API
+app.get('/api/song/url', async (req, res) => {
+  const { id } = req.query;
+  
+  if (!id) {
+    return res.status(400).json({ error: '歌曲ID不能为空' });
+  }
+  
+  try {
+    const result = await NeteaseCloudMusicApi.song_url({
+      id: id
+    });
+    
+    if (result.body.data && result.body.data.length > 0) {
+      const songUrl = result.body.data[0].url;
+      if (songUrl) {
+        res.json({ success: true, url: songUrl });
+      } else {
+        res.json({ success: false, error: '无法获取歌曲URL' });
+      }
+    } else {
+      res.json({ success: false, error: '获取歌曲URL失败' });
+    }
+  } catch (error) {
+    console.error('获取歌曲URL错误:', error);
+    res.status(500).json({ error: '获取歌曲URL失败，请稍后重试' });
+  }
+});
+
+// 解析音乐API
+app.get('/api/parse', async (req, res) => {
   const { url } = req.query;
   
   if (!url) {
     return res.status(400).json({ error: '音乐URL不能为空' });
   }
   
-  // 模拟解析延迟
-  setTimeout(() => {
-    res.json({
-      success: true,
-      downloadUrl: url, // 实际项目中这里会返回解析后的真实下载链接
-      filename: 'music.mp3'
+  try {
+    // 从URL中提取歌曲ID
+    const match = url.match(/id=(\d+)/);
+    if (match && match[1]) {
+      const songId = match[1];
+      const result = await NeteaseCloudMusicApi.song_url({
+        id: songId
+      });
+      
+      if (result.body.data && result.body.data.length > 0) {
+        const songUrl = result.body.data[0].url;
+        if (songUrl) {
+          res.json({
+            success: true,
+            downloadUrl: songUrl,
+            filename: 'music.mp3'
+          });
+        } else {
+          res.json({
+            success: false,
+            error: '无法获取歌曲下载链接'
+          });
+        }
+      } else {
+        res.json({
+          success: false,
+          error: '解析失败'
+        });
+      }
+    } else {
+      res.json({
+        success: false,
+        error: '无效的音乐URL'
+      });
+    }
+  } catch (error) {
+    console.error('解析错误:', error);
+    res.status(500).json({ error: '解析失败，请稍后重试' });
+  }
+});
+
+// 多平台搜索API
+app.get('/api/search/multi', async (req, res) => {
+  const { query, platform } = req.query;
+  
+  if (!query) {
+    return res.status(400).json({ error: '搜索关键词不能为空' });
+  }
+  
+  try {
+    // 支持的平台
+    const platforms = platform ? [platform] : ['wy', 'qq', 'kg', 'xm'];
+    const results = [];
+    
+    // 并行搜索所有平台
+    const searchPromises = platforms.map(async (plat) => {
+      try {
+        const searchResult = await search(plat, query, 1, 10);
+        if (searchResult && searchResult.data) {
+          const platformName = {
+            'wy': '网易云音乐',
+            'qq': 'QQ音乐',
+            'kg': '酷狗音乐',
+            'xm': '虾米音乐'
+          }[plat] || plat;
+          
+          const platformResults = searchResult.data.map(item => ({
+            id: `${plat}-${item.id}`,
+            title: item.name,
+            artist: item.artists ? item.artists.join('/') : item.artist,
+            album: item.album,
+            duration: formatDuration(item.duration || 0),
+            url: item.url || `https://music.${plat === 'wy' ? '163' : plat === 'qq' ? 'qq' : plat === 'kg' ? 'kugou' : 'xiami'}.com/song?id=${item.id}`,
+            provider: platformName,
+            platform: plat
+          }));
+          
+          results.push(...platformResults);
+        }
+      } catch (error) {
+        console.error(`${platform}搜索错误:`, error);
+      }
     });
-  }, 1000);
+    
+    await Promise.all(searchPromises);
+    
+    res.json({ results });
+  } catch (error) {
+    console.error('多平台搜索错误:', error);
+    res.status(500).json({ error: '搜索失败，请稍后重试' });
+  }
+});
+
+// 多平台音乐URL获取API
+app.get('/api/song/url/multi', async (req, res) => {
+  const { id, platform } = req.query;
+  
+  if (!id || !platform) {
+    return res.status(400).json({ error: '歌曲ID和平台不能为空' });
+  }
+  
+  try {
+    const result = await getMusicUrl(platform, id);
+    if (result && result.url) {
+      res.json({ success: true, url: result.url });
+    } else {
+      res.json({ success: false, error: '无法获取歌曲URL' });
+    }
+  } catch (error) {
+    console.error('获取歌曲URL错误:', error);
+    res.status(500).json({ error: '获取歌曲URL失败，请稍后重试' });
+  }
 });
 
 // 健康检查
@@ -107,12 +229,20 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// 格式化时长
+function formatDuration(ms) {
+  const seconds = Math.floor((ms / 1000) % 60);
+  const minutes = Math.floor((ms / 1000 / 60) % 60);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
 // 启动服务器
 app.listen(PORT, () => {
   console.log(`服务器运行在 http://localhost:${PORT}`);
   console.log('API端点:');
   console.log('- 搜索音乐: GET /api/search?query=关键词');
   console.log('- 获取歌曲详情: GET /api/song/:id');
+  console.log('- 获取歌曲URL: GET /api/song/url?id=歌曲ID');
   console.log('- 解析音乐: GET /api/parse?url=音乐URL');
   console.log('- 健康检查: GET /api/health');
 });

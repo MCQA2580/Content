@@ -1,80 +1,129 @@
 // 音乐搜索和合并功能
 
-// 模拟音乐提供者
+// 音乐提供者
 const Providers = [
   {
-    name: 'Provider1',
+    name: 'Netease',
+    platform: 'wy',
     searchSongs: async (keyword, page, limit) => {
-      // 模拟搜索延迟
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return [
-        {
-          id: '1-1',
-          name: '起风了',
-          singer: '买辣椒也用券',
-          album: '起风了',
-          duration: '4:11',
-          url: 'https://example.com/music/1.mp3',
-          provider: 'Provider1',
-          getMergedKey: function() {
-            return `${this.singer}-${this.name}`;
-          }
+      try {
+        // 调用多平台搜索API
+        const response = await fetch(`http://localhost:5000/api/search/multi?query=${encodeURIComponent(keyword)}&platform=wy`);
+        const data = await response.json();
+        
+        if (data.results) {
+          return data.results.map(song => ({
+            id: song.id,
+            name: song.title,
+            singer: song.artist,
+            album: song.album,
+            duration: song.duration,
+            url: song.url,
+            provider: song.provider,
+            platform: song.platform,
+            getMergedKey: function() {
+              return `${this.singer}-${this.name}`;
+            }
+          }));
         }
-      ];
+        return [];
+      } catch (error) {
+        console.error('网易云音乐搜索失败:', error);
+        return [];
+      }
     }
   },
   {
-    name: 'Provider2',
+    name: 'QQMusic',
+    platform: 'qq',
     searchSongs: async (keyword, page, limit) => {
-      // 模拟搜索延迟
-      await new Promise(resolve => setTimeout(resolve, 150));
-      return [
-        {
-          id: '2-1',
-          name: '起风了',
-          singer: '买辣椒也用券',
-          album: '起风了',
-          duration: '4:11',
-          url: 'https://example.com/music/2.mp3',
-          provider: 'Provider2',
-          getMergedKey: function() {
-            return `${this.singer}-${this.name}`;
-          }
-        },
-        {
-          id: '2-2',
-          name: '追光者',
-          singer: '岑宁儿',
-          album: '夏至未至 电视剧原声带',
-          duration: '3:55',
-          url: 'https://example.com/music/3.mp3',
-          provider: 'Provider2',
-          getMergedKey: function() {
-            return `${this.singer}-${this.name}`;
-          }
+      try {
+        // 调用多平台搜索API
+        const response = await fetch(`http://localhost:5000/api/search/multi?query=${encodeURIComponent(keyword)}&platform=qq`);
+        const data = await response.json();
+        
+        if (data.results) {
+          return data.results.map(song => ({
+            id: song.id,
+            name: song.title,
+            singer: song.artist,
+            album: song.album,
+            duration: song.duration,
+            url: song.url,
+            provider: song.provider,
+            platform: song.platform,
+            getMergedKey: function() {
+              return `${this.singer}-${this.name}`;
+            }
+          }));
         }
-      ];
+        return [];
+      } catch (error) {
+        console.error('QQ音乐搜索失败:', error);
+        return [];
+      }
     }
   },
   {
-    name: 'Provider3',
+    name: 'KuGou',
+    platform: 'kg',
     searchSongs: async (keyword, page, limit) => {
-      // 模拟搜索延迟
-      await new Promise(resolve => setTimeout(resolve, 120));
-      return [
-        {
-          id: '3-1',
-          name: '起风了',
-          singer: '买辣椒也用券',
-          album: '起风了',
-          duration: '4:11',
-          url: 'https://example.com/music/4.mp3',
-          provider: 'Provider3',
-          getMergedKey: function() {
-            return `${this.singer}-${this.name}`;
-          }
+      try {
+        // 调用多平台搜索API
+        const response = await fetch(`http://localhost:5000/api/search/multi?query=${encodeURIComponent(keyword)}&platform=kg`);
+        const data = await response.json();
+        
+        if (data.results) {
+          return data.results.map(song => ({
+            id: song.id,
+            name: song.title,
+            singer: song.artist,
+            album: song.album,
+            duration: song.duration,
+            url: song.url,
+            provider: song.provider,
+            platform: song.platform,
+            getMergedKey: function() {
+              return `${this.singer}-${this.name}`;
+            }
+          }));
         }
-      ];
+        return [];
+      } catch (error) {
+        console.error('酷狗音乐搜索失败:', error);
+        return [];
+      }
+    }
+  },
+  {
+    name: 'Xiami',
+    platform: 'xm',
+    searchSongs: async (keyword, page, limit) => {
+      try {
+        // 调用多平台搜索API
+        const response = await fetch(`http://localhost:5000/api/search/multi?query=${encodeURIComponent(keyword)}&platform=xm`);
+        const data = await response.json();
+        
+        if (data.results) {
+          return data.results.map(song => ({
+            id: song.id,
+            name: song.title,
+            singer: song.artist,
+            album: song.album,
+            duration: song.duration,
+            url: song.url,
+            provider: song.provider,
+            platform: song.platform,
+            getMergedKey: function() {
+              return `${this.singer}-${this.name}`;
+            }
+          }));
+        }
+        return [];
+      } catch (error) {
+        console.error('虾米音乐搜索失败:', error);
+        return [];
+      }
     }
   }
 ];
