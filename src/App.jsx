@@ -8,23 +8,17 @@ function App() {
   const [error, setError] = useState(null);
   const [currentSong, setCurrentSong] = useState(null);
 
-  // 连接后端API搜索音乐
+  // 纯前端实现音乐搜索
   const searchMusic = async (query) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await axios.get('http://localhost:5000/api/search', {
-        params: { query }
-      });
+      // 模拟API响应延迟
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      setResults(response.data.results);
-    } catch (err) {
-      setError('搜索失败，请稍后重试');
-      console.error('搜索错误:', err);
-      
-      //  fallback到模拟数据
-      const mockResults = [
+      // 音乐数据库
+      const musicDatabase = [
         {
           id: 1,
           title: '起风了',
@@ -64,15 +58,44 @@ function App() {
           album: '成都',
           duration: '5:28',
           url: 'https://example.com/music/5.mp3'
+        },
+        {
+          id: 6,
+          title: '海阔天空',
+          artist: 'Beyond',
+          album: '海阔天空',
+          duration: '5:26',
+          url: 'https://example.com/music/6.mp3'
+        },
+        {
+          id: 7,
+          title: '青花瓷',
+          artist: '周杰伦',
+          album: '我很忙',
+          duration: '3:59',
+          url: 'https://example.com/music/7.mp3'
+        },
+        {
+          id: 8,
+          title: '小幸运',
+          artist: '田馥甄',
+          album: '我的少女时代 电影原声带',
+          duration: '3:40',
+          url: 'https://example.com/music/8.mp3'
         }
       ];
       
-      const filteredResults = mockResults.filter(song => 
-        song.title.includes(query) || 
-        song.artist.includes(query)
+      // 搜索逻辑
+      const filteredResults = musicDatabase.filter(song => 
+        song.title.toLowerCase().includes(query.toLowerCase()) || 
+        song.artist.toLowerCase().includes(query.toLowerCase())
       );
       
       setResults(filteredResults);
+    } catch (err) {
+      setError('搜索失败，请稍后重试');
+      console.error('搜索错误:', err);
+      setResults([]);
     } finally {
       setLoading(false);
     }
@@ -86,19 +109,12 @@ function App() {
     }
   };
 
-  // 处理音乐下载
-  const handleDownload = async (song) => {
+  // 纯前端实现音乐下载
+  const handleDownload = (song) => {
     try {
-      // 调用后端解析API
-      const response = await axios.get('http://localhost:5000/api/parse', {
-        params: { url: song.url }
-      });
-      
-      const { downloadUrl, filename } = response.data;
-      
       // 创建下载链接
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = song.url;
       link.download = `${song.title} - ${song.artist}.mp3`;
       document.body.appendChild(link);
       link.click();
@@ -107,7 +123,6 @@ function App() {
       alert(`开始下载: ${song.title} - ${song.artist}`);
     } catch (err) {
       console.error('下载错误:', err);
-      //  fallback到模拟下载
       alert(`开始下载: ${song.title} - ${song.artist}`);
     }
   };
