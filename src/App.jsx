@@ -521,9 +521,7 @@ function App() {
             <p className="footer-description">搜索、解析和下载您喜爱的音乐</p>
           </div>
           <div className="footer-links">
-            <a href="#" className="footer-link">关于我们</a>
-            <a href="#" className="footer-link">使用条款</a>
-            <a href="#" className="footer-link">隐私政策</a>
+            <a href="https://github.com/MCQA2580/Content" target="_blank" rel="noopener noreferrer" className="footer-link">开源项目</a>
           </div>
           <div className="footer-disclaimer">
             <p>© 2026 音乐解析器 | 仅用于学习和研究目的</p>

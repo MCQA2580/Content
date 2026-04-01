@@ -520,12 +520,15 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  align-items: center;
+  text-align: center;
 }
 
 .footer-info {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .footer-title {
@@ -546,6 +549,7 @@ body {
   display: flex;
   gap: 2rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .footer-link {
@@ -567,6 +571,7 @@ body {
   color: var(--text-light);
   text-align: center;
   line-height: 1.4;
+  width: 100%;
 }
 
 /* 响应式设计 */
