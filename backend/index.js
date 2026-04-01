@@ -104,16 +104,20 @@ app.get('/api/song/:id', async (req, res) => {
       ids: id
     });
     
+    console.log('网易云音乐API结果:', JSON.stringify(result.body, null, 2));
+    
     if (result.body.songs && result.body.songs.length > 0) {
       const song = result.body.songs[0];
+      console.log('歌曲信息:', JSON.stringify(song, null, 2));
+      
       const songInfo = {
         id: song.id,
         title: song.name,
-        artist: song.artists ? song.artists.map(artist => artist.name).join('/') : '未知歌手',
-        album: song.album ? song.album.name : '未知专辑',
-        duration: formatDuration(song.duration || 0),
+        artist: song.ar ? song.ar.map(artist => artist.name).join('/') : '未知歌手',
+        album: song.al ? song.al.name : '未知专辑',
+        duration: formatDuration(song.dt || 0),
         url: `https://music.163.com/song?id=${song.id}`,
-        albumPic: song.album ? song.album.picUrl : null
+        albumPic: song.al ? song.al.picUrl : null
       };
       
       res.json({ song: songInfo });

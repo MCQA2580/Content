@@ -51,6 +51,12 @@ function App() {
           score: mergedSong.score
         };
         setResults([result]);
+        
+        // 提取歌曲ID并获取封面
+        const parts = result.id.split('-');
+        if (parts.length === 2 && parts[0] === 'wy') {
+          fetchCover(parts[1]);
+        }
       } else {
         // fallback到API解析器
         const parser = new APIParser();
@@ -58,6 +64,11 @@ function App() {
         
         if (apiResult.success) {
           setResults(apiResult.data.results);
+          
+          // 为每个结果获取封面
+          apiResult.data.results.forEach(song => {
+            fetchCover(song.id);
+          });
         } else {
           // fallback到本地音乐数据库
           const musicDatabase = [
