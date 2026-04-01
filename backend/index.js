@@ -42,37 +42,6 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// 获取音乐详情API
-app.get('/api/song/:id', async (req, res) => {
-  const { id } = req.params;
-  
-  try {
-    const result = await NeteaseCloudMusicApi.song_detail({
-      ids: [id]
-    });
-    
-    if (result.body.songs && result.body.songs.length > 0) {
-      const song = result.body.songs[0];
-      const songInfo = {
-        id: song.id,
-        title: song.name,
-        artist: song.artists.map(artist => artist.name).join('/'),
-        album: song.album.name,
-        duration: formatDuration(song.duration),
-        url: `https://music.163.com/song?id=${song.id}`,
-        albumPic: song.album.picUrl
-      };
-      
-      res.json({ song: songInfo });
-    } else {
-      res.status(404).json({ error: '歌曲不存在' });
-    }
-  } catch (error) {
-    console.error('获取详情错误:', error);
-    res.status(500).json({ error: '获取详情失败，请稍后重试' });
-  }
-});
-
 // 获取音乐URL API
 app.get('/api/song/url', async (req, res) => {
   const { id } = req.query;
@@ -99,6 +68,61 @@ app.get('/api/song/url', async (req, res) => {
   } catch (error) {
     console.error('获取歌曲URL错误:', error);
     res.status(500).json({ error: '获取歌曲URL失败，请稍后重试' });
+  }
+});
+
+// 获取歌词API
+app.get('/api/song/lyric', async (req, res) => {
+  const { id } = req.query;
+  
+  if (!id) {
+    return res.status(400).json({ error: '歌曲ID不能为空' });
+  }
+  
+  try {
+    const result = await NeteaseCloudMusicApi.lyric({
+      id: id
+    });
+    
+    if (result.body.lrc && result.body.lrc.lyric) {
+      res.json({ success: true, lyric: result.body.lrc.lyric });
+    } else {
+      res.json({ success: false, error: '无法获取歌词' });
+    }
+  } catch (error) {
+    console.error('获取歌词错误:', error);
+    res.status(500).json({ error: '获取歌词失败，请稍后重试' });
+  }
+});
+
+// 获取音乐详情API
+app.get('/api/song/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await NeteaseCloudMusicApi.song_detail({
+      ids: id
+    });
+    
+    if (result.body.songs && result.body.songs.length > 0) {
+      const song = result.body.songs[0];
+      const songInfo = {
+        id: song.id,
+        title: song.name,
+        artist: song.artists ? song.artists.map(artist => artist.name).join('/') : '未知歌手',
+        album: song.album ? song.album.name : '未知专辑',
+        duration: formatDuration(song.duration || 0),
+        url: `https://music.163.com/song?id=${song.id}`,
+        albumPic: song.album ? song.album.picUrl : null
+      };
+      
+      res.json({ song: songInfo });
+    } else {
+      res.status(404).json({ error: '歌曲不存在' });
+    }
+  } catch (error) {
+    console.error('获取详情错误:', error);
+    res.status(500).json({ error: '获取详情失败，请稍后重试' });
   }
 });
 
@@ -190,7 +214,7 @@ app.get('/api/search/multi', async (req, res) => {
           results.push(...platformResults);
         }
       } catch (error) {
-        console.error(`${platform}搜索错误:`, error);
+        console.error(`${plat}搜索错误:`, error);
       }
     });
     
@@ -211,16 +235,69 @@ app.get('/api/song/url/multi', async (req, res) => {
     return res.status(400).json({ error: '歌曲ID和平台不能为空' });
   }
   
+  console.log(`获取歌曲URL: platform=${platform}, id=${id}`);
+  
   try {
+    // 尝试使用musicfree-api获取音乐URL
     const result = await getMusicUrl(platform, id);
+    console.log('musicfree-api结果:', result);
+    
     if (result && result.url) {
       res.json({ success: true, url: result.url });
     } else {
-      res.json({ success: false, error: '无法获取歌曲URL' });
+      // 如果musicfree-api失败，尝试使用网易云音乐API作为fallback
+      console.log('musicfree-api失败，尝试使用网易云音乐API');
+      if (platform === 'wy') {
+        const neteaseResult = await NeteaseCloudMusicApi.song_url({
+          id: id
+        });
+        
+        console.log('网易云音乐API结果:', neteaseResult);
+        
+        if (neteaseResult.body.data && neteaseResult.body.data.length > 0) {
+          const songUrl = neteaseResult.body.data[0].url;
+          if (songUrl) {
+            res.json({ success: true, url: songUrl });
+          } else {
+            res.json({ success: false, error: '无法获取歌曲URL' });
+          }
+        } else {
+          res.json({ success: false, error: '获取歌曲URL失败' });
+        }
+      } else {
+        res.json({ success: false, error: '无法获取歌曲URL' });
+      }
     }
   } catch (error) {
     console.error('获取歌曲URL错误:', error);
-    res.status(500).json({ error: '获取歌曲URL失败，请稍后重试' });
+    
+    // 尝试使用网易云音乐API作为fallback
+    if (platform === 'wy') {
+      try {
+        console.log('尝试使用网易云音乐API作为fallback');
+        const neteaseResult = await NeteaseCloudMusicApi.song_url({
+          id: id
+        });
+        
+        console.log('网易云音乐API结果:', neteaseResult);
+        
+        if (neteaseResult.body.data && neteaseResult.body.data.length > 0) {
+          const songUrl = neteaseResult.body.data[0].url;
+          if (songUrl) {
+            res.json({ success: true, url: songUrl });
+          } else {
+            res.json({ success: false, error: '无法获取歌曲URL' });
+          }
+        } else {
+          res.json({ success: false, error: '获取歌曲URL失败' });
+        }
+      } catch (neteaseError) {
+        console.error('网易云音乐API错误:', neteaseError);
+        res.status(500).json({ error: '获取歌曲URL失败，请稍后重试' });
+      }
+    } else {
+      res.status(500).json({ error: '获取歌曲URL失败，请稍后重试' });
+    }
   }
 });
 

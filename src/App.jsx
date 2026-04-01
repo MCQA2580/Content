@@ -10,6 +10,8 @@ function App() {
   const [currentSong, setCurrentSong] = useState(null);
   const [selectedSource, setSelectedSource] = useState({});
   const [downloadProgress, setDownloadProgress] = useState({});
+  const [lyrics, setLyrics] = useState({});
+  const [covers, setCovers] = useState({});
 
   // 使用音乐搜索和合并功能
   const searchMusic = async (query) => {
@@ -165,9 +167,17 @@ function App() {
       const selected = selectedSource[song.id] || song.sources?.[0] || song;
       
       // 从歌曲ID中提取平台信息
-      const platformMatch = selected.id.match(/^(wy|qq|kg|xm)-/);
-      const platform = platformMatch ? platformMatch[1] : 'wy';
-      const songId = selected.id.replace(/^\w+-/, '');
+      let platform = 'wy';
+      let songId = song.id;
+      
+      // 确保selected和selected.id存在且是字符串
+      if (selected && typeof selected.id === 'string') {
+        const platformMatch = selected.id.match(/^(wy|qq|kg|xm)-/);
+        if (platformMatch) {
+          platform = platformMatch[1];
+          songId = selected.id.replace(/^\w+-/, '');
+        }
+      }
       
       // 开始下载前设置进度
       setDownloadProgress(prev => ({
@@ -226,6 +236,40 @@ function App() {
     }
   };
 
+  // 获取歌词
+  const fetchLyrics = async (songId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/song/lyric?id=${songId}`);
+      const result = await response.json();
+      
+      if (result.success && result.lyric) {
+        setLyrics(prev => ({
+          ...prev,
+          [songId]: result.lyric
+        }));
+      }
+    } catch (err) {
+      console.error('获取歌词错误:', err);
+    }
+  };
+
+  // 获取封面
+  const fetchCover = async (songId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/song/${songId}`);
+      const result = await response.json();
+      
+      if (result.song && result.song.albumPic) {
+        setCovers(prev => ({
+          ...prev,
+          [songId]: result.song.albumPic
+        }));
+      }
+    } catch (err) {
+      console.error('获取封面错误:', err);
+    }
+  };
+
   // 处理音乐预览
   const handlePreview = async (song) => {
     try {
@@ -239,9 +283,17 @@ function App() {
       const selected = selectedSource[song.id] || song.sources?.[0] || song;
       
       // 从歌曲ID中提取平台信息
-      const platformMatch = selected.id.match(/^(wy|qq|kg|xm)-/);
-      const platform = platformMatch ? platformMatch[1] : 'wy';
-      const songId = selected.id.replace(/^\w+-/, '');
+      let platform = 'wy';
+      let songId = song.id;
+      
+      // 确保selected和selected.id存在且是字符串
+      if (selected && typeof selected.id === 'string') {
+        const platformMatch = selected.id.match(/^(wy|qq|kg|xm)-/);
+        if (platformMatch) {
+          platform = platformMatch[1];
+          songId = selected.id.replace(/^\w+-/, '');
+        }
+      }
       
       // 通过后端API获取音乐URL
       const response = await fetch(`http://localhost:5000/api/song/url/multi?id=${songId}&platform=${platform}`);
@@ -251,9 +303,14 @@ function App() {
         // 创建带真实URL的歌曲对象
         const songWithUrl = {
           ...song,
-          url: result.url
+          url: result.url,
+          songId: songId
         };
         setCurrentSong(songWithUrl);
+        
+        // 获取歌词和封面
+        fetchLyrics(songId);
+        fetchCover(songId);
       } else {
         console.error('获取预览链接失败:', result.error);
         alert('无法获取预览链接');
@@ -270,146 +327,196 @@ function App() {
   };
 
   return (
-    <div className="container">
-      <header className="header">
-        <div className="header-content">
-          <h1 className="header-title">音乐解析器</h1>
-          <p className="header-subtitle">搜索、解析和下载您喜爱的音乐</p>
-          <div className="header-features">
+    <div className="app">
+      {/* 导航栏 */}
+      <nav className="navbar">
+        <div className="navbar-container">
+          <div className="navbar-brand">
+            <h1 className="brand-title">音乐解析器</h1>
+            <p className="brand-subtitle">搜索、解析和下载您喜爱的音乐</p>
+          </div>
+          <div className="navbar-features">
             <span className="feature-badge">网易云音乐</span>
             <span className="feature-badge">QQ音乐</span>
             <span className="feature-badge">酷狗音乐</span>
             <span className="feature-badge">虾米音乐</span>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <form onSubmit={handleSearch} className="search-container">
-        <div className="search-box">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="输入歌曲名称或歌手"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            required
-          />
-          <button type="submit" className="search-btn">
-            {loading ? <span className="spinner"></span> : '搜索'}
-          </button>
-        </div>
-      </form>
-
-      {error && (
-        <div className="error-message">
-          <span className="error-icon">⚠️</span>
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className="results-container">
-        <h2 className="results-title">搜索结果</h2>
-        {loading ? (
-          <div className="loading-container">
-            <div className="spinner-container">
-              <span className="spinner"></span>
+      {/* 英雄区域 */}
+      <section className="hero">
+        <div className="hero-container">
+          <h2 className="hero-title">发现您喜爱的音乐</h2>
+          <p className="hero-subtitle">从多个平台搜索并下载高品质音乐</p>
+          <form onSubmit={handleSearch} className="hero-search">
+            <div className="search-box">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="输入歌曲名称或歌手"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                required
+              />
+              <button type="submit" className="search-btn">
+                {loading ? <span className="spinner"></span> : '搜索'}
+              </button>
             </div>
-            <p className="loading-text">正在从多个平台搜索...</p>
+          </form>
+          <div className="hero-suggestions">
+            <span className="suggestion-tag">起风了</span>
+            <span className="suggestion-tag">追光者</span>
+            <span className="suggestion-tag">光年之外</span>
+            <span className="suggestion-tag">平凡之路</span>
           </div>
-        ) : results.length > 0 ? (
-          results.map((song) => (
-            <div key={song.id} className="result-card">
-              <div className="song-info">
-                <h3 className="song-title">{song.title}</h3>
-                <p className="song-artist">{song.artist}</p>
-                <p className="song-album">{song.album} · {song.duration}</p>
-                
-                {/* 来源选择 */}
-                {song.sources && song.sources.length > 1 && (
-                  <div className="sources-selector">
-                    <label>选择来源：</label>
-                    <select 
-                      className="source-select"
-                      value={selectedSource[song.id]?.id || song.sources[0].id}
-                      onChange={(e) => {
-                        const selectedId = e.target.value;
-                        const selectedSourceObj = song.sources.find(s => s.id === selectedId);
-                        if (selectedSourceObj) {
-                          handleSourceSelect(song.id, selectedSourceObj);
-                        }
-                      }}
-                    >
-                      {song.sources.map(source => (
-                        <option key={source.id} value={source.id}>
-                          {source.provider}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                
-                {/* 音频播放器 */}
-                {currentSong?.id === song.id && (
-                  <div className="audio-player">
-                    <audio controls autoPlay className="preview-audio">
-                      <source src={song.url} type="audio/mpeg" />
-                      您的浏览器不支持音频播放
-                    </audio>
-                    <button 
-                      className="stop-preview-btn"
-                      onClick={handleStopPreview}
-                    >
-                      停止预览
-                    </button>
-                  </div>
-                )}
-              </div>
-              
-              <div className="action-buttons">
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => handlePreview(song)}
-                  disabled={loading}
-                >
-                  {currentSong?.id === song.id ? '停止预览' : '预览'}
-                </button>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => handleDownload(song)}
-                  disabled={loading || downloadProgress[song.id] !== undefined}
-                >
-                  {downloadProgress[song.id] !== undefined ? (
-                    <span className="download-progress">
-                      {downloadProgress[song.id]}%
-                    </span>
-                  ) : '下载'}
-                </button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="empty-state">
-            <div className="empty-icon">🎵</div>
-            <h3 className="empty-title">暂无结果</h3>
-            <p className="empty-description">请输入歌曲名称或歌手进行搜索</p>
-            <div className="empty-suggestions">
-              <span className="suggestion-tag">起风了</span>
-              <span className="suggestion-tag">追光者</span>
-              <span className="suggestion-tag">光年之外</span>
-              <span className="suggestion-tag">平凡之路</span>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </section>
 
+      {/* 主内容区 */}
+      <main className="main">
+        <div className="main-container">
+          {error && (
+            <div className="error-message">
+              <span className="error-icon">⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* 搜索结果 */}
+          <section className="results-section">
+            <h3 className="section-title">搜索结果</h3>
+            {loading ? (
+              <div className="loading-container">
+                <div className="spinner-container">
+                  <span className="spinner"></span>
+                </div>
+                <p className="loading-text">正在从多个平台搜索...</p>
+              </div>
+            ) : results.length > 0 ? (
+              <div className="results-grid">
+                {results.map((song) => (
+                  <div key={song.id} className="result-card">
+                    {/* 歌曲封面 */}
+                    <div className="card-cover">
+                      {covers[song.songId || song.id] ? (
+                        <img 
+                          src={covers[song.songId || song.id]} 
+                          alt={`${song.title} - ${song.artist}`}
+                          className="cover-image"
+                        />
+                      ) : (
+                        <div className="cover-placeholder">🎵</div>
+                      )}
+                    </div>
+                    
+                    {/* 歌曲信息 */}
+                    <div className="card-info">
+                      <h4 className="song-title">{song.title}</h4>
+                      <p className="song-artist">{song.artist}</p>
+                      <p className="song-album">{song.album} · {song.duration}</p>
+                      
+                      {/* 来源选择 */}
+                      {song.sources && song.sources.length > 1 && (
+                        <div className="sources-selector">
+                          <label>来源：</label>
+                          <select 
+                            className="source-select"
+                            value={selectedSource[song.id]?.id || song.sources[0].id}
+                            onChange={(e) => {
+                              const selectedId = e.target.value;
+                              const selectedSourceObj = song.sources.find(s => s.id === selectedId);
+                              if (selectedSourceObj) {
+                                handleSourceSelect(song.id, selectedSourceObj);
+                              }
+                            }}
+                          >
+                            {song.sources.map(source => (
+                              <option key={source.id} value={source.id}>
+                                {source.provider}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* 操作按钮 */}
+                    <div className="card-actions">
+                      <button 
+                        className="btn btn-secondary"
+                        onClick={() => handlePreview(song)}
+                        disabled={loading}
+                      >
+                        {currentSong?.id === song.id ? '停止' : '预览'}
+                      </button>
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => handleDownload(song)}
+                        disabled={loading || downloadProgress[song.id] !== undefined}
+                      >
+                        {downloadProgress[song.id] !== undefined ? (
+                          <span className="download-progress">
+                            {downloadProgress[song.id]}%
+                          </span>
+                        ) : '下载'}
+                      </button>
+                    </div>
+                    
+                    {/* 音频播放器 */}
+                    {currentSong?.id === song.id && (
+                      <div className="card-player">
+                        <div className="player-content">
+                          <audio controls autoPlay className="preview-audio">
+                            <source src={currentSong.url} type="audio/mpeg" />
+                            您的浏览器不支持音频播放
+                          </audio>
+                        </div>
+                        
+                        {/* 歌词 */}
+                        {lyrics[currentSong.songId] && (
+                          <div className="player-lyrics">
+                            <h5>歌词</h5>
+                            <div className="lyrics-content">
+                              {lyrics[currentSong.songId].split('\n').map((line, index) => (
+                                <div key={index} className="lyric-line">
+                                  {line}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">🎵</div>
+                <h3 className="empty-title">暂无结果</h3>
+                <p className="empty-description">请输入歌曲名称或歌手进行搜索</p>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+
+      {/* 页脚 */}
       <footer className="footer">
-        <div className="footer-content">
-          <p className="footer-text">© 2026 音乐解析器 | 仅用于学习和研究目的</p>
-          <p className="footer-disclaimer">本网站仅解析和提供合法授权的音乐内容</p>
+        <div className="footer-container">
+          <div className="footer-info">
+            <h3 className="footer-title">音乐解析器</h3>
+            <p className="footer-description">搜索、解析和下载您喜爱的音乐</p>
+          </div>
           <div className="footer-links">
             <a href="#" className="footer-link">关于我们</a>
             <a href="#" className="footer-link">使用条款</a>
             <a href="#" className="footer-link">隐私政策</a>
+          </div>
+          <div className="footer-disclaimer">
+            <p>© 2026 音乐解析器 | 仅用于学习和研究目的</p>
+            <p>本网站仅解析和提供合法授权的音乐内容</p>
           </div>
         </div>
       </footer>
