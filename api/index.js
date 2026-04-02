@@ -160,15 +160,15 @@ module.exports = async (req, res) => {
           return;
         }
 
-        // 获取封面 URL
-        const coverUrl = song.album?.picUrl || song.album?.blurPicUrl || '';
+        // 获取封面 URL - 注意网易云API使用 al 而不是 album
+        const coverUrl = song.al?.picUrl || song.al?.blurPicUrl || '';
 
         res.writeHead(200, headers);
         res.end(JSON.stringify({ 
           cover: coverUrl,
           name: song.name,
-          artists: song.artists?.map(a => a.name).join(', '),
-          album: song.album?.name
+          artists: song.ar?.map(a => a.name).join(', '),
+          album: song.al?.name
         }));
         return;
       } catch (apiError) {
