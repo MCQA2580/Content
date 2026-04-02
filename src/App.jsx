@@ -392,6 +392,12 @@ function App() {
                           src={`${API_BASE_URL}/api/cover?picId=${song.picId}`}
                           alt={`${song.title} - ${song.artist}`}
                           className="cover-image"
+                          onError={(e) => {
+                            console.error('[封面] 加载失败:', e);
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<div class="cover-placeholder">🎵</div>';
+                          }}
+                          onLoad={() => console.log('[封面] 加载成功:', song.picId)}
                         />
                       ) : (
                         <div className="cover-placeholder">🎵</div>
