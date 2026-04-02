@@ -163,9 +163,13 @@ function App() {
       console.log('[下载] API结果:', result);
       
       if (result && result.url) {
+        // 将 HTTP 链接转换为 HTTPS
+        const httpsUrl = result.url.replace(/^http:\/\//, 'https://');
+        console.log('[下载] 转换后的URL:', httpsUrl);
+        
         // 创建下载链接
         const link = document.createElement('a');
-        link.href = result.url;
+        link.href = httpsUrl;
         link.download = `${song.title} - ${song.artist}.mp3`;
         document.body.appendChild(link);
         link.click();
@@ -263,10 +267,14 @@ function App() {
       console.log('[预览] API结果:', result);
       
       if (result && result.url) {
+        // 将 HTTP 链接转换为 HTTPS
+        const httpsUrl = result.url.replace(/^http:\/\//, 'https://');
+        console.log('[预览] 转换后的URL:', httpsUrl);
+        
         // 创建带真实URL的歌曲对象
         const songWithUrl = {
           ...song,
-          url: result.url
+          url: httpsUrl
         };
         setCurrentSong(songWithUrl);
         
