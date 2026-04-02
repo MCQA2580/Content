@@ -140,52 +140,42 @@ module.exports = async (req, res) => {
       }
     }
 
-    // 代理获取封面图片
-    if (path === '/api/cover' || path === '/_/backend/api/cover') {
-      const picId = url.searchParams.get('picId');
+    // 获取歌曲详情（包含封面）
+    if (path === '/api/song/detail' || path === '/_/backend/api/song/detail') {
+      const id = url.searchParams.get('id');
       
-      console.log('[封面代理] 请求 picId:', picId);
-      
-      if (!picId) {
+      if (!id) {
         res.writeHead(400, headers);
-        res.end(JSON.stringify({ error: '请提供图片ID' }));
+        res.end(JSON.stringify({ error: '请提供歌曲ID' }));
         return;
       }
 
       try {
-        // 构建网易云音乐封面 URL
-        const coverUrl = `https://p1.music.126.net/${picId}.jpg?param=200y200`;
-        console.log('[封面代理] 请求 URL:', coverUrl);
+        const result = await NeteaseCloudMusicApi.song_detail({ ids: id });
+        const song = result.body.songs?.[0];
         
-        // 获取图片
-        const imageResponse = await fetch(coverUrl);
-        console.log('[封面代理] 响应状态:', imageResponse.status);
-        
-        if (imageResponse.ok) {
-          const imageBuffer = await imageResponse.arrayBuffer();
-          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-          
-          console.log('[封面代理] 成功获取图片，大小:', imageBuffer.byteLength);
-          
-          // 返回图片（不使用 headers 变量，直接设置）
-          res.writeHead(200, {
-            'Content-Type': contentType,
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=86400'
-          });
-          res.end(Buffer.from(imageBuffer));
-        } else {
-          console.error('[封面代理] 图片获取失败:', imageResponse.status);
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: '封面图片不存在' }));
+        if (!song) {
+          res.writeHead(404, headers);
+          res.end(JSON.stringify({ error: '未找到歌曲' }));
+          return;
         }
+
+        // 获取封面 URL
+        const coverUrl = song.album?.picUrl || song.album?.blurPicUrl || '';
+
+        res.writeHead(200, headers);
+        res.end(JSON.stringify({ 
+          cover: coverUrl,
+          name: song.name,
+          artists: song.artists?.map(a => a.name).join(', '),
+          album: song.album?.name
+        }));
         return;
       } catch (apiError) {
-        console.error('[封面代理] 错误:', apiError);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        console.error('[获取歌曲详情错误]', apiError);
+        res.writeHead(500, headers);
         res.end(JSON.stringify({ 
-          error: '获取封面失败',
-          details: apiError.message
+          error: '获取歌曲详情失败'
         }));
         return;
       }

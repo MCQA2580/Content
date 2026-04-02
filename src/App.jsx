@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import APIParser from './api-parser';
 import BackendStatusIndicator from './components/BackendStatusIndicator';
+import CoverImage from './components/CoverImage';
 import { API_BASE_URL } from './config';
 
 function App() {
@@ -119,21 +120,12 @@ function App() {
           artist: song.artists?.join(', ') || '',
           album: song.album || '',
           duration: song.duration ? Math.floor(song.duration / 1000) : 0,
-          cover: song.cover || ''
+          picId: song.picId || ''
         }));
         
         console.log('[搜索] 格式化结果:', formattedResults);
+        console.log('[搜索] 第一首歌 picId:', formattedResults[0]?.picId);
         setResults(formattedResults);
-        
-        // 直接使用搜索结果中的 cover 字段，不需要额外获取
-        formattedResults.forEach(song => {
-          if (song.cover) {
-            setCovers(prev => ({
-              ...prev,
-              [song.id]: song.cover
-            }));
-          }
-        });
       } else {
         setError('未找到结果');
         console.log('[搜索] 未找到结果');
@@ -387,21 +379,7 @@ function App() {
                   <div key={song.id} className="result-card">
                     {/* 歌曲封面 */}
                     <div className="card-cover">
-                      {song.picId ? (
-                        <img 
-                          src={`${API_BASE_URL}/api/cover?picId=${song.picId}`}
-                          alt={`${song.title} - ${song.artist}`}
-                          className="cover-image"
-                          onError={(e) => {
-                            console.error('[封面] 加载失败:', e);
-                            e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<div class="cover-placeholder">🎵</div>';
-                          }}
-                          onLoad={() => console.log('[封面] 加载成功:', song.picId)}
-                        />
-                      ) : (
-                        <div className="cover-placeholder">🎵</div>
-                      )}
+                      <CoverImage songId={song.id} title={song.title} artist={song.artist} />
                     </div>
                     
                     {/* 歌曲信息 */}
