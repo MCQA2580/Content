@@ -19,24 +19,33 @@ function App() {
   // 后端健康检查
   const checkBackendHealth = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/health`, {
+      console.log('[健康检查] API_BASE_URL:', API_BASE_URL);
+      const healthUrl = `${API_BASE_URL}/api/health`;
+      console.log('[健康检查] 请求URL:', healthUrl);
+      
+      const response = await fetch(healthUrl, {
         method: 'GET',
         headers: {
           'Cache-Control': 'no-cache'
         }
       });
       
+      console.log('[健康检查] 响应状态:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[健康检查] 响应数据:', data);
         setBackendStatus('online');
         setLastHeartbeat(new Date().toLocaleTimeString());
         return true;
       } else {
+        console.error('[健康检查] 响应失败:', response.statusText);
         setBackendStatus('offline');
         return false;
       }
     } catch (error) {
-      console.error('后端健康检查失败:', error);
+      console.error('[健康检查] 错误:', error);
+      console.error('[健康检查] 错误详情:', error.message);
       setBackendStatus('offline');
       return false;
     }
