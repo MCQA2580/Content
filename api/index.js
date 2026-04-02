@@ -152,6 +152,8 @@ module.exports = async (req, res) => {
 
       try {
         const result = await NeteaseCloudMusicApi.song_detail({ ids: id });
+        console.log('[song_detail] API返回:', JSON.stringify(result.body, null, 2));
+        
         const song = result.body.songs?.[0];
         
         if (!song) {
@@ -160,8 +162,13 @@ module.exports = async (req, res) => {
           return;
         }
 
+        console.log('[song_detail] 歌曲对象:', JSON.stringify(song, null, 2));
+        console.log('[song_detail] song.al:', song.al);
+        console.log('[song_detail] song.album:', song.album);
+
         // 获取封面 URL - 注意网易云API使用 al 而不是 album
         const coverUrl = song.al?.picUrl || song.al?.blurPicUrl || '';
+        console.log('[song_detail] 封面URL:', coverUrl);
 
         res.writeHead(200, headers);
         res.end(JSON.stringify({ 
