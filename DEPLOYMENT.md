@@ -1,4 +1,4 @@
-# 完整部署指南
+# Vercel 部署指南
 
 ## ✅ 已配置完成
 
@@ -11,11 +11,11 @@ Mizuki-Content/
 │   ├── components/
 │   │   └── BackendStatusIndicator.jsx
 │   └── ...
-├── backend/                # 后端代码
-│   ├── index.js           # 已支持 /_/backend 路由
-│   ├── package.json
-│   └── ...
-├── vercel.json            # ✅ 根目录 Vercel 配置
+├── api/                    # ✅ Vercel Serverless Functions
+│   └── index.js           # 后端 API
+├── backend/                # 本地开发用后端（可选）
+│   └── index.js
+├── vercel.json            # ✅ Vercel 配置
 └── package.json
 ```
 
@@ -25,18 +25,12 @@ Mizuki-Content/
 - **开发环境**：`http://localhost:5000`
 - **生产环境**：`/_/backend`（相对路径）
 
-#### 后端配置 (`backend/index.js`)
-- ✅ 使用 Express Router
-- ✅ 同时支持两种路由：
-  - `/api/*`（本地开发）
-  - `/_/backend/api/*`（Vercel 部署）
-
 #### Vercel 配置 (`vercel.json`)
 - ✅ 前端：Vite 构建到 `dist/`
-- ✅ 后端：Node.js 函数
+- ✅ 后端：Vercel Serverless Function (`api/index.js`)
 - ✅ 路由：
-  - `/_/backend/*` → 后端
-  - `/*` → 前端
+  - `/_/backend/*` → `api/index.js`
+  - `/*` → 前端 `dist/`
 
 ## 🚀 部署步骤
 
@@ -135,8 +129,9 @@ Mizuki-Content/
 ## 📝 注意事项
 
 1. **确保根目录有 vercel.json**
-2. **确保后端代码支持 /_/backend 路由前缀**（已完成）
-3. **首次调用可能有冷启动延迟**（约1-3秒）
+2. **确保有 api/index.js 文件**
+3. **确保 package.json 包含所有依赖**
+4. **首次调用可能有冷启动延迟**（约1-3秒）
 
 ## 🆘 遇到问题？
 

@@ -3,16 +3,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "builds": [
-    {
-      "src": "backend/index.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
     {
       "src": "/_/backend/(.*)",
-      "dest": "/backend/index.js"
+      "dest": "/api/index"
     },
     {
       "src": "/(.*)",
@@ -21,7 +15,7 @@
     }
   ],
   "functions": {
-    "backend/index.js": {
+    "api/index.js": {
       "runtime": "@vercel/node@3"
     }
   },
