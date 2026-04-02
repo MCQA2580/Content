@@ -387,9 +387,9 @@ function App() {
                   <div key={song.id} className="result-card">
                     {/* 歌曲封面 */}
                     <div className="card-cover">
-                      {song.cover ? (
+                      {song.picId ? (
                         <img 
-                          src={song.cover.replace(/^http:\/\//, 'https://')} 
+                          src={`${API_BASE_URL}/api/cover?picId=${song.picId}`}
                           alt={`${song.title} - ${song.artist}`}
                           className="cover-image"
                         />

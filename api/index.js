@@ -50,22 +50,13 @@ module.exports = async (req, res) => {
         });
 
         const songs = result.body.result?.songs?.map(song => {
-          // 构建封面 URL
-          let coverUrl = '';
-          if (song.album?.picId) {
-            // 网易云音乐封面 URL 格式
-            const picId = song.album.picId;
-            // 使用不同的尺寸参数: 34x34, 64x64, 126x126, 130x130, 200x200, 400x400
-            coverUrl = `https://p2.music.126.net/sBpc8s6D1KFpjB_G5qXMzQ==/${picId}.jpg?param=200y200`;
-          }
-          
           return {
             id: song.id,
             name: song.name,
             artists: song.artists?.map(artist => artist.name) || [],
             album: song.album?.name || '',
             duration: song.duration || 0,
-            cover: coverUrl,
+            picId: song.album?.picId || '',
             platform: 'netease'
           };
         }) || [];
@@ -144,6 +135,49 @@ module.exports = async (req, res) => {
         res.writeHead(500, headers);
         res.end(JSON.stringify({ 
           error: '获取歌词失败'
+        }));
+        return;
+      }
+    }
+
+    // 代理获取封面图片
+    if (path === '/api/cover' || path === '/_/backend/api/cover') {
+      const picId = url.searchParams.get('picId');
+      
+      if (!picId) {
+        res.writeHead(400, headers);
+        res.end(JSON.stringify({ error: '请提供图片ID' }));
+        return;
+      }
+
+      try {
+        // 构建网易云音乐封面 URL
+        const coverUrl = `https://p1.music.126.net/${picId}.jpg?param=200y200`;
+        
+        // 获取图片
+        const imageResponse = await fetch(coverUrl);
+        
+        if (imageResponse.ok) {
+          const imageBuffer = await imageResponse.arrayBuffer();
+          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+          
+          // 返回图片
+          res.writeHead(200, {
+            'Content-Type': contentType,
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=86400'
+          });
+          res.end(Buffer.from(imageBuffer));
+        } else {
+          res.writeHead(404, headers);
+          res.end(JSON.stringify({ error: '封面图片不存在' }));
+        }
+        return;
+      } catch (apiError) {
+        console.error('[获取封面错误]', apiError);
+        res.writeHead(500, headers);
+        res.end(JSON.stringify({ 
+          error: '获取封面失败'
         }));
         return;
       }
