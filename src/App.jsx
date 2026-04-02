@@ -9,7 +9,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentSong, setCurrentSong] = useState(null);
-  const [selectedSource, setSelectedSource] = useState({});
   const [downloadProgress, setDownloadProgress] = useState({});
   const [lyrics, setLyrics] = useState({});
   const [covers, setCovers] = useState({});
@@ -145,14 +144,6 @@ function App() {
     if (searchQuery.trim()) {
       searchMusic(searchQuery.trim());
     }
-  };
-
-  // 处理来源选择
-  const handleSourceSelect = (songId, source) => {
-    setSelectedSource(prev => ({
-      ...prev,
-      [songId]: source
-    }));
   };
 
   // 使用API解析器实现音乐下载
@@ -393,31 +384,7 @@ function App() {
                     <div className="card-info">
                       <h4 className="song-title">{song.title}</h4>
                       <p className="song-artist">{song.artist}</p>
-                      <p className="song-album">{song.album} · {song.duration}</p>
-                      
-                      {/* 来源选择 */}
-                      {song.sources && song.sources.length > 1 && (
-                        <div className="sources-selector">
-                          <label>来源：</label>
-                          <select 
-                            className="source-select"
-                            value={selectedSource[song.id]?.id || song.sources[0].id}
-                            onChange={(e) => {
-                              const selectedId = e.target.value;
-                              const selectedSourceObj = song.sources.find(s => s.id === selectedId);
-                              if (selectedSourceObj) {
-                                handleSourceSelect(song.id, selectedSourceObj);
-                              }
-                            }}
-                          >
-                            {song.sources.map(source => (
-                              <option key={source.id} value={source.id}>
-                                {source.provider}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                      <p className="song-album">{song.album} · {typeof song.duration === 'number' ? `${Math.floor(song.duration / 60)}:${String(song.duration % 60).padStart(2, '0')}` : song.duration}</p>
                     </div>
                     
                     {/* 操作按钮 */}
