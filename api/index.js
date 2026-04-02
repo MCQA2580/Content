@@ -60,15 +60,23 @@ module.exports = async (req, res) => {
           console.log('[Album 完整对象]', JSON.stringify(result.body.result.songs[0].album, null, 2));
         }
 
-        const songs = result.body.result?.songs?.map(song => ({
-          id: song.id,
-          name: song.name,
-          artists: song.artists?.map(artist => artist.name) || [],
-          album: song.album?.name || '',
-          duration: song.duration || 0,
-          cover: song.album?.picUrl || song.album?.blurPicUrl || song.album?.picUrl_str || '',
-          platform: 'netease'
-        })) || [];
+        const songs = result.body.result?.songs?.map(song => {
+          // 根据 picId 构建封面 URL
+          let coverUrl = '';
+          if (song.album?.picId) {
+            coverUrl = `https://p1.music.126.net/${song.album.picId}.jpg`;
+          }
+          
+          return {
+            id: song.id,
+            name: song.name,
+            artists: song.artists?.map(artist => artist.name) || [],
+            album: song.album?.name || '',
+            duration: song.duration || 0,
+            cover: coverUrl,
+            platform: 'netease'
+          };
+        }) || [];
 
         console.log(`[搜索成功] 返回 ${songs.length} 首歌曲`);
         console.log('[第一首歌]', songs[0]);
