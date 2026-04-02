@@ -1,4 +1,4 @@
-// Vercel Serverless Function - 简化版（不使用 musicfree-api）
+// Vercel Serverless Function - 调试版
 
 const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
 
@@ -41,32 +41,46 @@ module.exports = async (req, res) => {
       console.log(`[搜索请求] 关键词: "${query}"`);
       
       if (!query) {
+        console.log('[搜索失败] 缺少关键词');
         res.writeHead(400, headers);
         res.end(JSON.stringify({ error: '请提供搜索关键词' }));
         return;
       }
 
-      const result = await NeteaseCloudMusicApi.search({ 
-        keywords: query,
-        limit: 20
-      });
+      try {
+        console.log('[调用网易云API] 开始...');
+        const result = await NeteaseCloudMusicApi.search({ 
+          keywords: query,
+          limit: 20
+        });
+        console.log('[网易云API响应]', JSON.stringify(result, null, 2));
 
-      const songs = result.body.result?.songs?.map(song => ({
-        id: song.id,
-        name: song.name,
-        artists: song.artists?.map(artist => artist.name) || [],
-        album: song.album?.name || '',
-        duration: song.duration || 0,
-        cover: song.album?.picUrl || song.album?.blurPicUrl || '',
-        platform: 'netease'
-      })) || [];
+        const songs = result.body.result?.songs?.map(song => ({
+          id: song.id,
+          name: song.name,
+          artists: song.artists?.map(artist => artist.name) || [],
+          album: song.album?.name || '',
+          duration: song.duration || 0,
+          cover: song.album?.picUrl || song.album?.blurPicUrl || '',
+          platform: 'netease'
+        })) || [];
 
-      res.writeHead(200, headers);
-      res.end(JSON.stringify({ songs }));
-      return;
+        console.log(`[搜索成功] 返回 ${songs.length} 首歌曲`);
+        res.writeHead(200, headers);
+        res.end(JSON.stringify({ songs }));
+        return;
+      } catch (apiError) {
+        console.error('[网易云API错误]', apiError);
+        res.writeHead(500, headers);
+        res.end(JSON.stringify({ 
+          error: '搜索失败，请稍后重试',
+          details: apiError.message
+        }));
+        return;
+      }
     }
 
-    // 获取音乐URL - 尝试多种方法
+    // 获取音乐URL
     if (path === '/api/song/url' || path === '/_/backend/api/song/url') {
       const id = url.searchParams.get('id');
       console.log(`[获取URL请求] 歌曲ID: ${id}`);
@@ -77,45 +91,37 @@ module.exports = async (req, res) => {
         return;
       }
 
-      // 方法1: 不指定音质
-      console.log('[方法1] 不指定音质');
-      let result = await NeteaseCloudMusicApi.song_url({ id: id });
-      let songUrl = result.body.data?.[0]?.url;
-      
-      // 方法2: 尝试标准音质
-      if (!songUrl) {
-        console.log('[方法2] 标准音质 br=128000');
-        result = await NeteaseCloudMusicApi.song_url({ id: id, br: 128000 });
-        songUrl = result.body.data?.[0]?.url;
-      }
-      
-      // 方法3: 尝试高品质
-      if (!songUrl) {
-        console.log('[方法3] 高品质 br=320000');
-        result = await NeteaseCloudMusicApi.song_url({ id: id, br: 320000 });
-        songUrl = result.body.data?.[0]?.url;
-      }
-      
-      // 方法4: 尝试无损音质
-      if (!songUrl) {
-        console.log('[方法4] 无损音质 br=999000');
-        result = await NeteaseCloudMusicApi.song_url({ id: id, br: 999000 });
-        songUrl = result.body.data?.[0]?.url;
-      }
+      try {
+        console.log('[调用网易云API] song_url...');
+        let result = await NeteaseCloudMusicApi.song_url({ id: id });
+        let songUrl = result.body.data?.[0]?.url;
+        
+        if (!songUrl) {
+          console.log('[尝试128kbps]');
+          result = await NeteaseCloudMusicApi.song_url({ id: id, br: 128000 });
+          songUrl = result.body.data?.[0]?.url;
+        }
 
-      console.log('[最终URL]', songUrl);
-
-      if (songUrl) {
-        res.writeHead(200, headers);
-        res.end(JSON.stringify({ url: songUrl }));
-      } else {
-        res.writeHead(404, headers);
+        if (songUrl) {
+          res.writeHead(200, headers);
+          res.end(JSON.stringify({ url: songUrl }));
+        } else {
+          res.writeHead(404, headers);
+          res.end(JSON.stringify({ 
+            error: '无法获取音乐URL',
+            note: '这首歌可能需要登录或付费才能播放'
+          }));
+        }
+        return;
+      } catch (apiError) {
+        console.error('[获取URL错误]', apiError);
+        res.writeHead(500, headers);
         res.end(JSON.stringify({ 
-          error: '无法获取音乐URL',
-          note: '这首歌可能需要登录或付费才能播放'
+          error: '获取URL失败',
+          details: apiError.message
         }));
+        return;
       }
-      return;
     }
 
     // 获取歌词
@@ -129,40 +135,19 @@ module.exports = async (req, res) => {
         return;
       }
 
-      const result = await NeteaseCloudMusicApi.lyric({ id: id });
-      const lrc = result.body.lrc?.lyric;
-      res.writeHead(200, headers);
-      res.end(JSON.stringify({ lyric: lrc || '' }));
-      return;
-    }
-
-    // 获取歌曲详情
-    if (path.startsWith('/api/song/') || path.startsWith('/_/backend/api/song/')) {
-      const id = path.split('/').pop();
-      if (id && id !== 'url' && id !== 'lyric') {
-        console.log(`[获取详情请求] 歌曲ID: ${id}`);
-        
-        const result = await NeteaseCloudMusicApi.song_detail({ ids: id });
-        const song = result.body.songs?.[0];
-        
-        if (!song) {
-          res.writeHead(404, headers);
-          res.end(JSON.stringify({ error: '未找到歌曲' }));
-          return;
-        }
-
-        const formattedSong = {
-          id: song.id,
-          name: song.name,
-          artists: song.artists?.map(artist => artist.name) || [],
-          album: song.album?.name || '',
-          duration: song.duration || 0,
-          cover: song.album?.picUrl || song.album?.blurPicUrl || '',
-          platform: 'netease'
-        };
-
+      try {
+        const result = await NeteaseCloudMusicApi.lyric({ id: id });
+        const lrc = result.body.lrc?.lyric;
         res.writeHead(200, headers);
-        res.end(JSON.stringify({ song: formattedSong }));
+        res.end(JSON.stringify({ lyric: lrc || '' }));
+        return;
+      } catch (apiError) {
+        console.error('[获取歌词错误]', apiError);
+        res.writeHead(500, headers);
+        res.end(JSON.stringify({ 
+          error: '获取歌词失败',
+          details: apiError.message
+        }));
         return;
       }
     }
@@ -172,7 +157,7 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ error: 'API 端点不存在' }));
 
   } catch (error) {
-    console.error('[API 错误]', error);
+    console.error('[全局错误]', error);
     res.writeHead(500, headers);
     res.end(JSON.stringify({ 
       error: '服务器内部错误',
