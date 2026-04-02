@@ -4,14 +4,16 @@ const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
 const { search, getMusicUrl } = require('musicfree-api');
 
 const app = express();
+const router = express.Router();
 const PORT = process.env.PORT || 5000;
 
 // 启用CORS
 app.use(cors());
 app.use(express.json());
 
+// 将所有 API 路由挂载到路由器上
 // 搜索音乐API
-app.get('/api/search', async (req, res) => {
+router.get('/api/search', async (req, res) => {
   const { query } = req.query;
   
   if (!query) {
@@ -43,7 +45,7 @@ app.get('/api/search', async (req, res) => {
 });
 
 // 获取音乐URL API
-app.get('/api/song/url', async (req, res) => {
+router.get('/api/song/url', async (req, res) => {
   const { id } = req.query;
   
   if (!id) {
@@ -72,7 +74,7 @@ app.get('/api/song/url', async (req, res) => {
 });
 
 // 获取歌词API
-app.get('/api/song/lyric', async (req, res) => {
+router.get('/api/song/lyric', async (req, res) => {
   const { id } = req.query;
   
   if (!id) {
@@ -96,7 +98,7 @@ app.get('/api/song/lyric', async (req, res) => {
 });
 
 // 获取音乐详情API
-app.get('/api/song/:id', async (req, res) => {
+router.get('/api/song/:id', async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -131,7 +133,7 @@ app.get('/api/song/:id', async (req, res) => {
 });
 
 // 解析音乐API
-app.get('/api/parse', async (req, res) => {
+router.get('/api/parse', async (req, res) => {
   const { url } = req.query;
   
   if (!url) {
@@ -180,7 +182,7 @@ app.get('/api/parse', async (req, res) => {
 });
 
 // 多平台搜索API
-app.get('/api/search/multi', async (req, res) => {
+router.get('/api/search/multi', async (req, res) => {
   const { query, platform } = req.query;
   
   if (!query) {
@@ -232,7 +234,7 @@ app.get('/api/search/multi', async (req, res) => {
 });
 
 // 多平台音乐URL获取API
-app.get('/api/song/url/multi', async (req, res) => {
+router.get('/api/song/url/multi', async (req, res) => {
   const { id, platform } = req.query;
   
   if (!id || !platform) {
@@ -306,9 +308,15 @@ app.get('/api/song/url/multi', async (req, res) => {
 });
 
 // 健康检查
-app.get('/api/health', (req, res) => {
+router.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// 挂载路由器 - 同时支持两种路由方式
+// 1. 本地开发：直接访问 /api/*
+// 2. 部署环境：通过 /_/backend/api/*
+app.use('/', router);
+app.use('/_/backend', router);
 
 // 格式化时长
 function formatDuration(ms) {

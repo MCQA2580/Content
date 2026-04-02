@@ -10,10 +10,9 @@ const config = {
   development: {
     apiBaseUrl: 'http://localhost:5000'
   },
-  // 生产环境 (GitHub Pages)
-  // 注意：GitHub Pages 不能托管后端，这里需要填写您实际部署的后端地址
+  // 生产环境 (使用 /_/backend 路由前缀)
   production: {
-    apiBaseUrl: 'https://your-backend-domain.com' // 请替换为您的实际后端地址
+    apiBaseUrl: '/_/backend'
   }
 };
 
