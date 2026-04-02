@@ -49,15 +49,26 @@ module.exports = async (req, res) => {
           limit: 20
         });
 
-        const songs = result.body.result?.songs?.map(song => ({
-          id: song.id,
-          name: song.name,
-          artists: song.artists?.map(artist => artist.name) || [],
-          album: song.album?.name || '',
-          duration: song.duration || 0,
-          cover: '', // 暂时不提供封面，需要更复杂的加密逻辑
-          platform: 'netease'
-        })) || [];
+        const songs = result.body.result?.songs?.map(song => {
+          // 构建封面 URL
+          let coverUrl = '';
+          if (song.album?.picId) {
+            // 网易云音乐封面 URL 格式
+            const picId = song.album.picId;
+            // 使用不同的尺寸参数: 34x34, 64x64, 126x126, 130x130, 200x200, 400x400
+            coverUrl = `https://p2.music.126.net/sBpc8s6D1KFpjB_G5qXMzQ==/${picId}.jpg?param=200y200`;
+          }
+          
+          return {
+            id: song.id,
+            name: song.name,
+            artists: song.artists?.map(artist => artist.name) || [],
+            album: song.album?.name || '',
+            duration: song.duration || 0,
+            cover: coverUrl,
+            platform: 'netease'
+          };
+        }) || [];
 
         res.writeHead(200, headers);
         res.end(JSON.stringify({ songs }));
