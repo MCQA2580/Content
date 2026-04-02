@@ -1,4 +1,4 @@
-// Vercel Serverless Function - URL 功能版（调试版）
+// Vercel Serverless Function - URL 功能版（修复版）
 
 const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
 
@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // 获取音乐URL
+    // 获取音乐URL - 尝试多种方法
     if (path === '/api/song/url' || path === '/_/backend/api/song/url') {
       const id = url.searchParams.get('id');
       console.log(`[获取URL请求] 歌曲ID: ${id}`);
@@ -77,44 +77,62 @@ module.exports = async (req, res) => {
         return;
       }
 
-      console.log('[调用网易云API] song_url');
-      const result = await NeteaseCloudMusicApi.song_url({ 
-        id: id,
-        br: 320000
-      });
+      // 方法1: 不指定音质
+      console.log('[方法1] 不指定音质');
+      let result = await NeteaseCloudMusicApi.song_url({ id: id });
+      let songUrl = result.body.data?.[0]?.url;
+      
+      // 方法2: 尝试标准音质
+      if (!songUrl) {
+        console.log('[方法2] 标准音质 br=128000');
+        result = await NeteaseCloudMusicApi.song_url({ id: id, br: 128000 });
+        songUrl = result.body.data?.[0]?.url;
+      }
+      
+      // 方法3: 尝试高品质
+      if (!songUrl) {
+        console.log('[方法3] 高品质 br=320000');
+        result = await NeteaseCloudMusicApi.song_url({ id: id, br: 320000 });
+        songUrl = result.body.data?.[0]?.url;
+      }
+      
+      // 方法4: 尝试无损音质
+      if (!songUrl) {
+        console.log('[方法4] 无损音质 br=999000');
+        result = await NeteaseCloudMusicApi.song_url({ id: id, br: 999000 });
+        songUrl = result.body.data?.[0]?.url;
+      }
 
-      console.log('[API响应]', JSON.stringify(result, null, 2));
-
-      const songUrl = result.body.data?.[0]?.url;
-      console.log('[提取URL]', songUrl);
+      console.log('[最终URL]', songUrl);
 
       if (songUrl) {
         res.writeHead(200, headers);
         res.end(JSON.stringify({ url: songUrl }));
       } else {
-        // 尝试更低音质
-        console.log('[尝试更低音质] br=128000');
-        const result2 = await NeteaseCloudMusicApi.song_url({ 
-          id: id,
-          br: 128000
-        });
-        const songUrl2 = result2.body.data?.[0]?.url;
-        console.log('[低音质URL]', songUrl2);
-        
-        if (songUrl2) {
-          res.writeHead(200, headers);
-          res.end(JSON.stringify({ url: songUrl2 }));
-        } else {
-          res.writeHead(404, headers);
-          res.end(JSON.stringify({ 
-            error: '无法获取音乐URL',
-            debug: {
-              id: id,
-              response: result.body
-            }
-          }));
-        }
+        res.writeHead(404, headers);
+        res.end(JSON.stringify({ 
+          error: '无法获取音乐URL',
+          note: '这首歌可能需要登录或付费才能播放'
+        }));
       }
+      return;
+    }
+
+    // 获取歌词
+    if (path === '/api/song/lyric' || path === '/_/backend/api/song/lyric') {
+      const id = url.searchParams.get('id');
+      console.log(`[获取歌词请求] 歌曲ID: ${id}`);
+      
+      if (!id) {
+        res.writeHead(400, headers);
+        res.end(JSON.stringify({ error: '请提供歌曲ID' }));
+        return;
+      }
+
+      const result = await NeteaseCloudMusicApi.lyric({ id: id });
+      const lrc = result.body.lrc?.lyric;
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ lyric: lrc || '' }));
       return;
     }
 
@@ -123,7 +141,7 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ 
       message: '功能开发中...',
       path: path,
-      available: ['/api/health', '/api/search', '/api/song/url']
+      available: ['/api/health', '/api/search', '/api/song/url', '/api/song/lyric']
     }));
 
   } catch (error) {
