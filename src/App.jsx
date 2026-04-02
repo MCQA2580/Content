@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import APIParser from './api-parser';
 import { searchSong } from './music-search';
 import BackendStatusIndicator from './components/BackendStatusIndicator';
+import { API_BASE_URL } from './config';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,7 +21,7 @@ function App() {
   // 后端健康检查
   const checkBackendHealth = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/health', {
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
         method: 'GET',
         headers: {
           'Cache-Control': 'no-cache'
@@ -45,20 +46,24 @@ function App() {
 
   // 手动激活后端服务
   const activateBackend = async () => {
+    console.log('激活按钮被点击');
     setActivatingBackend(true);
     setBackendStatus('checking');
     
     try {
       // 尝试多次连接
       for (let i = 0; i < 5; i++) {
+        console.log(`尝试连接 (${i + 1}/5)...`);
         const success = await checkBackendHealth();
         if (success) {
+          console.log('连接成功！');
           setActivatingBackend(false);
           return;
         }
         // 等待2秒后重试
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
+      console.log('所有尝试都失败了');
       setActivatingBackend(false);
       alert('激活失败，请检查后端服务是否已启动');
     } catch (error) {
@@ -269,7 +274,7 @@ function App() {
       }));
       
       // 通过后端API获取音乐URL
-      const response = await fetch(`http://localhost:5000/api/song/url/multi?id=${songId}&platform=${platform}`);
+      const response = await fetch(`${API_BASE_URL}/api/song/url/multi?id=${songId}&platform=${platform}`);
       const result = await response.json();
       
       if (result.success && result.url) {
@@ -322,7 +327,7 @@ function App() {
   // 获取歌词
   const fetchLyrics = async (songId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/song/lyric?id=${songId}`);
+      const response = await fetch(`${API_BASE_URL}/api/song/lyric?id=${songId}`);
       const result = await response.json();
       
       if (result.success && result.lyric) {
@@ -339,7 +344,7 @@ function App() {
   // 获取封面
   const fetchCover = async (songId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/song/${songId}`);
+      const response = await fetch(`${API_BASE_URL}/api/song/${songId}`);
       const result = await response.json();
       
       if (result.song && result.song.albumPic) {
@@ -379,7 +384,7 @@ function App() {
       }
       
       // 通过后端API获取音乐URL
-      const response = await fetch(`http://localhost:5000/api/song/url/multi?id=${songId}&platform=${platform}`);
+      const response = await fetch(`${API_BASE_URL}/api/song/url/multi?id=${songId}&platform=${platform}`);
       const result = await response.json();
       
       if (result.success && result.url) {

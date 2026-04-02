@@ -24,8 +24,20 @@ function BackendStatusIndicator({
       {backendStatus !== 'online' && (
         <button 
           className="activate-backend-btn"
-          onClick={onActivate}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('激活按钮被点击');
+            if (onActivate) {
+              onActivate();
+            }
+          }}
           disabled={activatingBackend}
+          style={{ 
+            cursor: activatingBackend ? 'not-allowed' : 'pointer',
+            pointerEvents: activatingBackend ? 'none' : 'auto',
+            zIndex: 1000
+          }}
         >
           {activatingBackend ? (
             <span className="spinner-small"></span>

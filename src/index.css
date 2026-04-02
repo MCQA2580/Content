@@ -170,6 +170,9 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
+  z-index: 1000;
+  pointer-events: auto;
 }
 
 .activate-backend-btn:hover:not(:disabled) {

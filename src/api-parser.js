@@ -1,6 +1,8 @@
+import { API_BASE_URL } from './config';
+
 class APIParser {
   constructor() {
-    this.baseURL = 'http://localhost:5000';
+    this.baseURL = API_BASE_URL;
     this.timeout = 10000;
   }
 
