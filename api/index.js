@@ -1,4 +1,4 @@
-// Vercel Serverless Function - 搜索功能版
+// Vercel Serverless Function - 搜索功能版（修复字段）
 
 const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
 
@@ -51,15 +51,22 @@ module.exports = async (req, res) => {
         limit: 20
       });
 
-      const songs = result.body.result?.songs?.map(song => ({
-        id: song.id,
-        name: song.name,
-        artists: song.ar?.map(artist => artist.name) || [],
-        album: song.al?.name || '',
-        duration: song.dt || 0,
-        cover: song.al?.picUrl || '',
-        platform: 'netease'
-      })) || [];
+      console.log('[API 原始响应]', JSON.stringify(result.body, null, 2));
+
+      const songs = result.body.result?.songs?.map(song => {
+        console.log('[处理歌曲]', JSON.stringify(song, null, 2));
+        return {
+          id: song.id,
+          name: song.name,
+          artists: song.artists?.map(artist => artist.name) || song.ar?.map(artist => artist.name) || [],
+          album: song.album?.name || song.al?.name || '',
+          duration: song.duration || song.dt || 0,
+          cover: song.album?.picUrl || song.al?.picUrl || '',
+          platform: 'netease'
+        };
+      }) || [];
+
+      console.log('[格式化后歌曲]', JSON.stringify(songs, null, 2));
 
       res.writeHead(200, headers);
       res.end(JSON.stringify({ songs }));
