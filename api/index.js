@@ -53,7 +53,12 @@ module.exports = async (req, res) => {
           keywords: query,
           limit: 20
         });
-        console.log('[网易云API响应]', JSON.stringify(result, null, 2));
+        
+        // 打印第一首歌的 album 对象，查看所有字段
+        if (result.body.result?.songs?.[0]?.album) {
+          console.log('[Album 对象字段]', Object.keys(result.body.result.songs[0].album));
+          console.log('[Album 完整对象]', JSON.stringify(result.body.result.songs[0].album, null, 2));
+        }
 
         const songs = result.body.result?.songs?.map(song => ({
           id: song.id,
@@ -61,11 +66,12 @@ module.exports = async (req, res) => {
           artists: song.artists?.map(artist => artist.name) || [],
           album: song.album?.name || '',
           duration: song.duration || 0,
-          cover: song.album?.picUrl || song.album?.blurPicUrl || '',
+          cover: song.album?.picUrl || song.album?.blurPicUrl || song.album?.picUrl_str || '',
           platform: 'netease'
         })) || [];
 
         console.log(`[搜索成功] 返回 ${songs.length} 首歌曲`);
+        console.log('[第一首歌]', songs[0]);
         res.writeHead(200, headers);
         res.end(JSON.stringify({ songs }));
         return;
