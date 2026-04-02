@@ -1,4 +1,4 @@
-// Vercel Serverless Function - URL 功能版
+// Vercel Serverless Function - URL 功能版（调试版）
 
 const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
 
@@ -77,18 +77,43 @@ module.exports = async (req, res) => {
         return;
       }
 
+      console.log('[调用网易云API] song_url');
       const result = await NeteaseCloudMusicApi.song_url({ 
         id: id,
         br: 320000
       });
 
+      console.log('[API响应]', JSON.stringify(result, null, 2));
+
       const songUrl = result.body.data?.[0]?.url;
+      console.log('[提取URL]', songUrl);
+
       if (songUrl) {
         res.writeHead(200, headers);
         res.end(JSON.stringify({ url: songUrl }));
       } else {
-        res.writeHead(404, headers);
-        res.end(JSON.stringify({ error: '无法获取音乐URL' }));
+        // 尝试更低音质
+        console.log('[尝试更低音质] br=128000');
+        const result2 = await NeteaseCloudMusicApi.song_url({ 
+          id: id,
+          br: 128000
+        });
+        const songUrl2 = result2.body.data?.[0]?.url;
+        console.log('[低音质URL]', songUrl2);
+        
+        if (songUrl2) {
+          res.writeHead(200, headers);
+          res.end(JSON.stringify({ url: songUrl2 }));
+        } else {
+          res.writeHead(404, headers);
+          res.end(JSON.stringify({ 
+            error: '无法获取音乐URL',
+            debug: {
+              id: id,
+              response: result.body
+            }
+          }));
+        }
       }
       return;
     }
