@@ -117,9 +117,14 @@ function App() {
         console.log('[搜索] 格式化结果:', formattedResults);
         setResults(formattedResults);
         
-        // 为每个结果获取封面
+        // 直接使用搜索结果中的 cover 字段，不需要额外获取
         formattedResults.forEach(song => {
-          fetchCover(song.id);
+          if (song.cover) {
+            setCovers(prev => ({
+              ...prev,
+              [song.id]: song.cover
+            }));
+          }
         });
       } else {
         setError('未找到结果');
@@ -259,41 +264,26 @@ function App() {
         return;
       }
       
-      // 获取选中的来源或默认使用第一个来源
-      const selected = selectedSource[song.id] || song.sources?.[0] || song;
-      
-      // 从歌曲ID中提取平台信息
-      let platform = 'wy';
-      let songId = song.id;
-      
-      // 确保selected和selected.id存在且是字符串
-      if (selected && typeof selected.id === 'string') {
-        const platformMatch = selected.id.match(/^(wy|qq|kg|xm)-/);
-        if (platformMatch) {
-          platform = platformMatch[1];
-          songId = selected.id.replace(/^\w+-/, '');
-        }
-      }
-      
       // 通过后端API获取音乐URL
-      const response = await fetch(`${API_BASE_URL}/api/song/url/multi?id=${songId}&platform=${platform}`);
+      console.log('[预览] 获取URL，歌曲ID:', song.id);
+      const response = await fetch(`${API_BASE_URL}/api/song/url?id=${song.id}`);
       const result = await response.json();
       
-      if (result.success && result.url) {
+      console.log('[预览] API结果:', result);
+      
+      if (result && result.url) {
         // 创建带真实URL的歌曲对象
         const songWithUrl = {
           ...song,
-          url: result.url,
-          songId: songId
+          url: result.url
         };
         setCurrentSong(songWithUrl);
         
-        // 获取歌词和封面
-        fetchLyrics(songId);
-        fetchCover(songId);
+        // 获取歌词
+        fetchLyrics(song.id);
       } else {
         console.error('获取预览链接失败:', result.error);
-        alert('无法获取预览链接');
+        alert(`无法获取预览链接\n${result.note || ''}`);
       }
     } catch (err) {
       console.error('预览错误:', err);
