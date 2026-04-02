@@ -14,11 +14,6 @@
       "check": true
     }
   ],
-  "functions": {
-    "api/index.js": {
-      "runtime": "@vercel/node@3"
-    }
-  },
   "env": {
     "NODE_ENV": "production"
   }
