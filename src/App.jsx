@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import APIParser from './api-parser';
-import { searchSong } from './music-search';
 import BackendStatusIndicator from './components/BackendStatusIndicator';
 import { API_BASE_URL } from './config';
 
@@ -90,138 +89,41 @@ function App() {
     };
   }, []);
 
-  // 使用音乐搜索和合并功能
+  // 搜索音乐
   const searchMusic = async (query) => {
     setLoading(true);
     setError(null);
     setResults([]);
     
     try {
-      // 尝试从查询中提取歌手和歌曲名
-      const parts = query.split(' ');
-      let singer = '';
-      let songName = '';
+      console.log('[搜索] 开始搜索:', query);
       
-      if (parts.length > 1) {
-        // 假设最后一个词是歌曲名，前面的是歌手
-        songName = parts[parts.length - 1];
-        singer = parts.slice(0, -1).join(' ');
-      } else {
-        // 如果只有一个词，同时作为歌手和歌曲名
-        singer = query;
-        songName = query;
-      }
+      const parser = new APIParser();
+      const apiResult = await parser.searchMusic(query);
       
-      // 使用音乐搜索和合并功能
-      const mergedSong = await searchSong(singer, songName, '');
+      console.log('[搜索] API 结果:', apiResult);
       
-      if (mergedSong) {
-        // 将合并后的歌曲转换为前端需要的格式
-        const result = {
-          id: mergedSong.sources[0].id,
-          title: mergedSong.name,
-          artist: mergedSong.singer,
-          album: mergedSong.album,
-          duration: mergedSong.duration,
-          url: mergedSong.sources[0].url,
-          sources: mergedSong.sources,
-          score: mergedSong.score
-        };
-        setResults([result]);
+      if (apiResult.success && apiResult.data && apiResult.data.songs) {
+        // 转换格式以匹配前端
+        const formattedResults = apiResult.data.songs.map(song => ({
+          id: song.id,
+          title: song.name,
+          artist: song.artists?.join(', ') || '',
+          album: song.album || '',
+          duration: song.duration ? Math.floor(song.duration / 1000) : 0,
+          cover: song.cover || ''
+        }));
         
-        // 提取歌曲ID并获取封面
-        const parts = result.id.split('-');
-        if (parts.length === 2 && parts[0] === 'wy') {
-          fetchCover(parts[1]);
-        }
-      } else {
-        // fallback到API解析器
-        const parser = new APIParser();
-        const apiResult = await parser.searchMusic(query);
+        console.log('[搜索] 格式化结果:', formattedResults);
+        setResults(formattedResults);
         
-        if (apiResult.success) {
-          setResults(apiResult.data.results);
-          
-          // 为每个结果获取封面
-          apiResult.data.results.forEach(song => {
-            fetchCover(song.id);
-          });
-        } else {
-          // fallback到本地音乐数据库
-          const musicDatabase = [
-            {
-              id: 1,
-              title: '起风了',
-              artist: '买辣椒也用券',
-              album: '起风了',
-              duration: '4:11',
-              url: 'https://example.com/music/1.mp3'
-            },
-            {
-              id: 2,
-              title: '追光者',
-              artist: '岑宁儿',
-              album: '夏至未至 电视剧原声带',
-              duration: '3:55',
-              url: 'https://example.com/music/2.mp3'
-            },
-            {
-              id: 3,
-              title: '光年之外',
-              artist: '邓紫棋',
-              album: '光年之外',
-              duration: '3:58',
-              url: 'https://example.com/music/3.mp3'
-            },
-            {
-              id: 4,
-              title: '平凡之路',
-              artist: '朴树',
-              album: '平凡之路',
-              duration: '4:05',
-              url: 'https://example.com/music/4.mp3'
-            },
-            {
-              id: 5,
-              title: '成都',
-              artist: '赵雷',
-              album: '成都',
-              duration: '5:28',
-              url: 'https://example.com/music/5.mp3'
-            },
-            {
-              id: 6,
-              title: '海阔天空',
-              artist: 'Beyond',
-              album: '海阔天空',
-              duration: '5:26',
-              url: 'https://example.com/music/6.mp3'
-            },
-            {
-              id: 7,
-              title: '青花瓷',
-              artist: '周杰伦',
-              album: '我很忙',
-              duration: '3:59',
-              url: 'https://example.com/music/7.mp3'
-            },
-            {
-              id: 8,
-              title: '小幸运',
-              artist: '田馥甄',
-              album: '我的少女时代 电影原声带',
-              duration: '3:40',
-              url: 'https://example.com/music/8.mp3'
-            }
-          ];
-          
-          const filteredResults = musicDatabase.filter(song => 
-            song.title.toLowerCase().includes(query.toLowerCase()) || 
-            song.artist.toLowerCase().includes(query.toLowerCase())
-          );
-          
-          setResults(filteredResults);
-        }
+        // 为每个结果获取封面
+        formattedResults.forEach(song => {
+          fetchCover(song.id);
+        });
+      } else {
+        setError('未找到结果');
+        console.log('[搜索] 未找到结果');
       }
     } catch (err) {
       setError('搜索失败，请稍后重试');
@@ -251,22 +153,6 @@ function App() {
   // 使用API解析器实现音乐下载
   const handleDownload = async (song) => {
     try {
-      // 获取选中的来源或默认使用第一个来源
-      const selected = selectedSource[song.id] || song.sources?.[0] || song;
-      
-      // 从歌曲ID中提取平台信息
-      let platform = 'wy';
-      let songId = song.id;
-      
-      // 确保selected和selected.id存在且是字符串
-      if (selected && typeof selected.id === 'string') {
-        const platformMatch = selected.id.match(/^(wy|qq|kg|xm)-/);
-        if (platformMatch) {
-          platform = platformMatch[1];
-          songId = selected.id.replace(/^\w+-/, '');
-        }
-      }
-      
       // 开始下载前设置进度
       setDownloadProgress(prev => ({
         ...prev,
@@ -274,10 +160,13 @@ function App() {
       }));
       
       // 通过后端API获取音乐URL
-      const response = await fetch(`${API_BASE_URL}/api/song/url/multi?id=${songId}&platform=${platform}`);
+      console.log('[下载] 获取URL，歌曲ID:', song.id);
+      const response = await fetch(`${API_BASE_URL}/api/song/url?id=${song.id}`);
       const result = await response.json();
       
-      if (result.success && result.url) {
+      console.log('[下载] API结果:', result);
+      
+      if (result && result.url) {
         // 创建下载链接
         const link = document.createElement('a');
         link.href = result.url;
@@ -306,7 +195,7 @@ function App() {
         alert(`开始下载: ${song.title} - ${song.artist}`);
       } else {
         console.error('获取下载链接失败:', result.error);
-        alert(`无法获取下载链接: ${song.title} - ${song.artist}`);
+        alert(`无法获取下载链接: ${song.title} - ${song.artist}\n${result.note || ''}`);
         setDownloadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[song.id];
@@ -327,10 +216,13 @@ function App() {
   // 获取歌词
   const fetchLyrics = async (songId) => {
     try {
+      console.log('[歌词] 获取歌词，歌曲ID:', songId);
       const response = await fetch(`${API_BASE_URL}/api/song/lyric?id=${songId}`);
       const result = await response.json();
       
-      if (result.success && result.lyric) {
+      console.log('[歌词] API结果:', result);
+      
+      if (result && result.lyric) {
         setLyrics(prev => ({
           ...prev,
           [songId]: result.lyric
