@@ -97,7 +97,41 @@ router.get('/api/song/lyric', async (req, res) => {
   }
 });
 
-// 获取音乐详情API
+// 获取歌曲详情（包含封面）- 新端点，与 Vercel 后端保持一致
+router.get('/api/song/detail', async (req, res) => {
+  const { id } = req.query;
+  
+  if (!id) {
+    return res.status(400).json({ error: '请提供歌曲ID' });
+  }
+  
+  try {
+    const result = await NeteaseCloudMusicApi.song_detail({
+      ids: id
+    });
+    
+    const song = result.body.songs?.[0];
+    
+    if (!song) {
+      return res.status(404).json({ error: '未找到歌曲' });
+    }
+    
+    // 获取封面 URL
+    const coverUrl = song.al?.picUrl || song.al?.blurPicUrl || '';
+    
+    res.json({
+      cover: coverUrl,
+      name: song.name,
+      artists: song.ar?.map(a => a.name).join(', '),
+      album: song.al?.name
+    });
+  } catch (error) {
+    console.error('[获取歌曲详情错误]', error);
+    res.status(500).json({ error: '获取歌曲详情失败' });
+  }
+});
+
+// 获取音乐详情API (旧端点，保留兼容)
 router.get('/api/song/:id', async (req, res) => {
   const { id } = req.params;
   
