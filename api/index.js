@@ -1,6 +1,8 @@
-// Vercel Serverless Function - 稳定基础版
+// Vercel Serverless Function - 搜索功能版
 
-module.exports = (req, res) => {
+const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
+
+module.exports = async (req, res) => {
   // CORS 响应头
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -33,16 +35,47 @@ module.exports = (req, res) => {
       return;
     }
 
-    // 简单的测试端点
+    // 搜索音乐
+    if (path === '/api/search' || path === '/_/backend/api/search') {
+      const query = url.searchParams.get('query');
+      console.log(`[搜索请求] 关键词: "${query}"`);
+      
+      if (!query) {
+        res.writeHead(400, headers);
+        res.end(JSON.stringify({ error: '请提供搜索关键词' }));
+        return;
+      }
+
+      const result = await NeteaseCloudMusicApi.search({ 
+        keywords: query,
+        limit: 20
+      });
+
+      const songs = result.body.result?.songs?.map(song => ({
+        id: song.id,
+        name: song.name,
+        artists: song.ar?.map(artist => artist.name) || [],
+        album: song.al?.name || '',
+        duration: song.dt || 0,
+        cover: song.al?.picUrl || '',
+        platform: 'netease'
+      })) || [];
+
+      res.writeHead(200, headers);
+      res.end(JSON.stringify({ songs }));
+      return;
+    }
+
+    // 其他端点返回简单响应
     res.writeHead(200, headers);
     res.end(JSON.stringify({ 
-      message: 'API 运行中',
+      message: '功能开发中...',
       path: path,
-      note: '音乐功能正在逐步添加中...'
+      available: ['/api/health', '/api/search']
     }));
 
   } catch (error) {
-    console.error('[错误]', error);
+    console.error('[API 错误]', error);
     res.writeHead(500, headers);
     res.end(JSON.stringify({ 
       error: '服务器内部错误',
