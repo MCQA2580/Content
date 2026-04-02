@@ -274,7 +274,8 @@ function App() {
         // 创建带真实URL的歌曲对象
         const songWithUrl = {
           ...song,
-          url: httpsUrl
+          url: httpsUrl,
+          songId: song.id
         };
         setCurrentSong(songWithUrl);
         
@@ -377,9 +378,9 @@ function App() {
                   <div key={song.id} className="result-card">
                     {/* 歌曲封面 */}
                     <div className="card-cover">
-                      {covers[song.songId || song.id] ? (
+                      {song.cover ? (
                         <img 
-                          src={covers[song.songId || song.id]} 
+                          src={song.cover.replace(/^http:\/\//, 'https://')} 
                           alt={`${song.title} - ${song.artist}`}
                           className="cover-image"
                         />
