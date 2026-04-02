@@ -28,16 +28,16 @@ router.get('/api/search', async (req, res) => {
     });
     
     // 转换结果格式
-    const results = result.body.result.songs.map(song => ({
+    const songs = result.body.result.songs.map(song => ({
       id: song.id,
-      title: song.name,
-      artist: song.artists.map(artist => artist.name).join('/'),
+      name: song.name,
+      artists: song.artists.map(artist => artist.name),
       album: song.album.name,
-      duration: formatDuration(song.duration),
-      url: `https://music.163.com/song?id=${song.id}`
+      duration: song.duration || 0,
+      picId: song.album?.picId || ''
     }));
     
-    res.json({ results });
+    res.json({ songs });
   } catch (error) {
     console.error('搜索错误:', error);
     res.status(500).json({ error: '搜索失败，请稍后重试' });
