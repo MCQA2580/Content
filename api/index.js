@@ -1,4 +1,4 @@
-// Vercel Serverless Function - 搜索功能版（修复字段）
+// Vercel Serverless Function - URL 功能版
 
 const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
 
@@ -51,25 +51,45 @@ module.exports = async (req, res) => {
         limit: 20
       });
 
-      console.log('[API 原始响应]', JSON.stringify(result.body, null, 2));
-
-      const songs = result.body.result?.songs?.map(song => {
-        console.log('[处理歌曲]', JSON.stringify(song, null, 2));
-        return {
-          id: song.id,
-          name: song.name,
-          artists: song.artists?.map(artist => artist.name) || song.ar?.map(artist => artist.name) || [],
-          album: song.album?.name || song.al?.name || '',
-          duration: song.duration || song.dt || 0,
-          cover: song.album?.picUrl || song.al?.picUrl || '',
-          platform: 'netease'
-        };
-      }) || [];
-
-      console.log('[格式化后歌曲]', JSON.stringify(songs, null, 2));
+      const songs = result.body.result?.songs?.map(song => ({
+        id: song.id,
+        name: song.name,
+        artists: song.artists?.map(artist => artist.name) || [],
+        album: song.album?.name || '',
+        duration: song.duration || 0,
+        cover: song.album?.picUrl || song.album?.blurPicUrl || '',
+        platform: 'netease'
+      })) || [];
 
       res.writeHead(200, headers);
       res.end(JSON.stringify({ songs }));
+      return;
+    }
+
+    // 获取音乐URL
+    if (path === '/api/song/url' || path === '/_/backend/api/song/url') {
+      const id = url.searchParams.get('id');
+      console.log(`[获取URL请求] 歌曲ID: ${id}`);
+      
+      if (!id) {
+        res.writeHead(400, headers);
+        res.end(JSON.stringify({ error: '请提供歌曲ID' }));
+        return;
+      }
+
+      const result = await NeteaseCloudMusicApi.song_url({ 
+        id: id,
+        br: 320000
+      });
+
+      const songUrl = result.body.data?.[0]?.url;
+      if (songUrl) {
+        res.writeHead(200, headers);
+        res.end(JSON.stringify({ url: songUrl }));
+      } else {
+        res.writeHead(404, headers);
+        res.end(JSON.stringify({ error: '无法获取音乐URL' }));
+      }
       return;
     }
 
@@ -78,7 +98,7 @@ module.exports = async (req, res) => {
     res.end(JSON.stringify({ 
       message: '功能开发中...',
       path: path,
-      available: ['/api/health', '/api/search']
+      available: ['/api/health', '/api/search', '/api/song/url']
     }));
 
   } catch (error) {
