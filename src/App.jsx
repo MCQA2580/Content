@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import APIParser from './api-parser';
 import { searchSong } from './music-search';
+import BackendStatusIndicator from './components/BackendStatusIndicator';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -12,6 +13,77 @@ function App() {
   const [downloadProgress, setDownloadProgress] = useState({});
   const [lyrics, setLyrics] = useState({});
   const [covers, setCovers] = useState({});
+  const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'online', 'offline'
+  const [lastHeartbeat, setLastHeartbeat] = useState(null);
+  const [activatingBackend, setActivatingBackend] = useState(false);
+
+  // 后端健康检查
+  const checkBackendHealth = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/health', {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBackendStatus('online');
+        setLastHeartbeat(new Date().toLocaleTimeString());
+        return true;
+      } else {
+        setBackendStatus('offline');
+        return false;
+      }
+    } catch (error) {
+      console.error('后端健康检查失败:', error);
+      setBackendStatus('offline');
+      return false;
+    }
+  };
+
+  // 手动激活后端服务
+  const activateBackend = async () => {
+    setActivatingBackend(true);
+    setBackendStatus('checking');
+    
+    try {
+      // 尝试多次连接
+      for (let i = 0; i < 5; i++) {
+        const success = await checkBackendHealth();
+        if (success) {
+          setActivatingBackend(false);
+          return;
+        }
+        // 等待2秒后重试
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      setActivatingBackend(false);
+      alert('激活失败，请检查后端服务是否已启动');
+    } catch (error) {
+      console.error('激活后端服务失败:', error);
+      setActivatingBackend(false);
+      setBackendStatus('offline');
+      alert('激活失败，请检查后端服务是否已启动');
+    }
+  };
+
+  // 组件加载时启动健康检查和心跳机制
+  useEffect(() => {
+    // 立即检查一次
+    checkBackendHealth();
+    
+    // 每30秒发送一次心跳，保持后端活跃
+    const heartbeatInterval = setInterval(() => {
+      checkBackendHealth();
+    }, 30000);
+    
+    // 清理函数
+    return () => {
+      clearInterval(heartbeatInterval);
+    };
+  }, []);
 
   // 使用音乐搜索和合并功能
   const searchMusic = async (query) => {
@@ -342,9 +414,18 @@ function App() {
       {/* 导航栏 */}
       <nav className="navbar">
         <div className="navbar-container">
-          <div className="navbar-brand">
-            <h1 className="brand-title">音乐解析器</h1>
-            <p className="brand-subtitle">搜索、解析和下载您喜爱的音乐</p>
+          <div className="navbar-left">
+            <div className="navbar-brand">
+              <h1 className="brand-title">音乐解析器</h1>
+              <p className="brand-subtitle">搜索、解析和下载您喜爱的音乐</p>
+            </div>
+            {/* 后端状态指示器 */}
+            <BackendStatusIndicator
+              backendStatus={backendStatus}
+              lastHeartbeat={lastHeartbeat}
+              activatingBackend={activatingBackend}
+              onActivate={activateBackend}
+            />
           </div>
           <div className="navbar-features">
             <span className="feature-badge">网易云音乐</span>

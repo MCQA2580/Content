@@ -5,14 +5,25 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start:daemon": "node start-with-pm2.js",
+    "dev": "nodemon index.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop music-parser-backend",
+    "pm2:restart": "pm2 restart music-parser-backend",
+    "pm2:delete": "pm2 delete music-parser-backend",
+    "pm2:logs": "pm2 logs music-parser-backend",
+    "pm2:monit": "pm2 monit",
+    "pm2:save": "pm2 save",
+    "pm2:startup": "pm2 startup",
+    "pm2:status": "pm2 status"
   },
   "dependencies": {
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "musicfree-api": "^1.0.0",
-    "NeteaseCloudMusicApi": "^4.30.0"
+    "NeteaseCloudMusicApi": "^4.30.0",
+    "pm2": "^5.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

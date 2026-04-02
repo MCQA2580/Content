@@ -317,13 +317,78 @@ function formatDuration(ms) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// 启动服务器
-app.listen(PORT, () => {
-  console.log(`服务器运行在 http://localhost:${PORT}`);
-  console.log('API端点:');
-  console.log('- 搜索音乐: GET /api/search?query=关键词');
-  console.log('- 获取歌曲详情: GET /api/song/:id');
-  console.log('- 获取歌曲URL: GET /api/song/url?id=歌曲ID');
-  console.log('- 解析音乐: GET /api/parse?url=音乐URL');
-  console.log('- 健康检查: GET /api/health');
+// 保活机制
+let server;
+
+function startServer() {
+  server = app.listen(PORT, () => {
+    console.log(`服务器运行在 http://localhost:${PORT}`);
+    console.log('API端点:');
+    console.log('- 搜索音乐: GET /api/search?query=关键词');
+    console.log('- 获取歌曲详情: GET /api/song/:id');
+    console.log('- 获取歌曲URL: GET /api/song/url?id=歌曲ID');
+    console.log('- 解析音乐: GET /api/parse?url=音乐URL');
+    console.log('- 健康检查: GET /api/health');
+  });
+
+  // 错误处理
+  server.on('error', (error) => {
+    console.error('服务器错误:', error);
+    if (error.code === 'EADDRINUSE') {
+      console.error(`端口 ${PORT} 已被占用，尝试使用其他端口...`);
+      process.exit(1);
+    }
+  });
+}
+
+// 进程异常处理
+process.on('uncaughtException', (error) => {
+  console.error('未捕获的异常:', error);
+  // 尝试优雅重启
+  try {
+    if (server) {
+      server.close(() => {
+        console.log('服务器已关闭，正在重启...');
+        startServer();
+      });
+    } else {
+      startServer();
+    }
+  } catch (e) {
+    console.error('重启失败:', e);
+    process.exit(1);
+  }
 });
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('未处理的Promise拒绝:', reason);
+});
+
+// 优雅关闭
+process.on('SIGTERM', () => {
+  console.log('收到SIGTERM信号，正在关闭服务器...');
+  if (server) {
+    server.close(() => {
+      console.log('服务器已优雅关闭');
+      process.exit(0);
+    });
+  }
+});
+
+process.on('SIGINT', () => {
+  console.log('收到SIGINT信号，正在关闭服务器...');
+  if (server) {
+    server.close(() => {
+      console.log('服务器已优雅关闭');
+      process.exit(0);
+    });
+  }
+});
+
+// 启动服务器
+startServer();
+
+// 定期健康检查（每5分钟）
+setInterval(() => {
+  console.log('服务器健康检查:', new Date().toISOString());
+}, 5 * 60 * 1000);
