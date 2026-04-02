@@ -9,6 +9,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Content-Type': 'application/json'
 };
 
 module.exports = async (req, res) => {
@@ -19,11 +20,6 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // 设置 CORS 头
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    res.setHeader(key, value);
-  });
-
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const path = url.pathname;
@@ -32,7 +28,8 @@ module.exports = async (req, res) => {
 
     // 健康检查
     if (path === '/api/health' || path === '/_/backend/api/health') {
-      res.json({ status: 'ok', timestamp: new Date().toISOString() });
+      res.writeHead(200, corsHeaders);
+      res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
       return;
     }
 
@@ -42,7 +39,8 @@ module.exports = async (req, res) => {
       console.log(`[搜索请求] 关键词: "${query}"`);
       
       if (!query) {
-        res.status(400).json({ error: '请提供搜索关键词' });
+        res.writeHead(400, corsHeaders);
+        res.end(JSON.stringify({ error: '请提供搜索关键词' }));
         return;
       }
 
@@ -61,17 +59,19 @@ module.exports = async (req, res) => {
         platform: 'netease'
       })) || [];
 
-      res.json({ songs });
+      res.writeHead(200, corsHeaders);
+      res.end(JSON.stringify({ songs }));
       return;
     }
 
     // 获取音乐URL
     if (path === '/api/song/url' || path === '/_/backend/api/song/url') {
       const id = url.searchParams.get('id');
-      console.log(`[获取URL请求] 歌曲ID: ${id}`);
+      console.log(`[获取URL请求] 歌曲ID: ${id}"`);
       
       if (!id) {
-        res.status(400).json({ error: '请提供歌曲ID' });
+        res.writeHead(400, corsHeaders);
+        res.end(JSON.stringify({ error: '请提供歌曲ID' }));
         return;
       }
 
@@ -80,11 +80,13 @@ module.exports = async (req, res) => {
         br: 320000
       });
 
-      const url = result.body.data?.[0]?.url;
-      if (url) {
-        res.json({ url });
+      const songUrl = result.body.data?.[0]?.url;
+      if (songUrl) {
+        res.writeHead(200, corsHeaders);
+        res.end(JSON.stringify({ url: songUrl }));
       } else {
-        res.status(404).json({ error: '无法获取音乐URL' });
+        res.writeHead(404, corsHeaders);
+        res.end(JSON.stringify({ error: '无法获取音乐URL' }));
       }
       return;
     }
@@ -92,16 +94,18 @@ module.exports = async (req, res) => {
     // 获取歌词
     if (path === '/api/song/lyric' || path === '/_/backend/api/song/lyric') {
       const id = url.searchParams.get('id');
-      console.log(`[获取歌词请求] 歌曲ID: ${id}`);
+      console.log(`[获取歌词请求] 歌曲ID: ${id}"`);
       
       if (!id) {
-        res.status(400).json({ error: '请提供歌曲ID' });
+        res.writeHead(400, corsHeaders);
+        res.end(JSON.stringify({ error: '请提供歌曲ID' }));
         return;
       }
 
       const result = await NeteaseCloudMusicApi.lyric({ id: id });
       const lrc = result.body.lrc?.lyric;
-      res.json({ lyric: lrc || '' });
+      res.writeHead(200, corsHeaders);
+      res.end(JSON.stringify({ lyric: lrc || '' }));
       return;
     }
 
@@ -109,13 +113,14 @@ module.exports = async (req, res) => {
     if (path.startsWith('/api/song/') || path.startsWith('/_/backend/api/song/')) {
       const id = path.split('/').pop();
       if (id && id !== 'url' && id !== 'lyric') {
-        console.log(`[获取详情请求] 歌曲ID: ${id}`);
+        console.log(`[获取详情请求] 歌曲ID: ${id}"`);
         
         const result = await NeteaseCloudMusicApi.song_detail({ ids: id });
         const song = result.body.songs?.[0];
         
         if (!song) {
-          res.status(404).json({ error: '未找到歌曲' });
+          res.writeHead(404, corsHeaders);
+          res.end(JSON.stringify({ error: '未找到歌曲' }));
           return;
         }
 
@@ -129,7 +134,8 @@ module.exports = async (req, res) => {
           platform: 'netease'
         };
 
-        res.json({ song: formattedSong });
+        res.writeHead(200, corsHeaders);
+        res.end(JSON.stringify({ song: formattedSong }));
         return;
       }
     }
@@ -137,10 +143,11 @@ module.exports = async (req, res) => {
     // 解析音乐
     if (path === '/api/parse' || path === '/_/backend/api/parse') {
       const musicUrl = url.searchParams.get('url');
-      console.log(`[解析请求] URL: ${musicUrl}`);
+      console.log(`[解析请求] URL: ${musicUrl}"`);
       
       if (!musicUrl) {
-        res.status(400).json({ error: '请提供音乐URL' });
+        res.writeHead(400, corsHeaders);
+        res.end(JSON.stringify({ error: '请提供音乐URL' }));
         return;
       }
 
@@ -156,7 +163,8 @@ module.exports = async (req, res) => {
           provider: 'netease'
         });
 
-        res.json({
+        res.writeHead(200, corsHeaders);
+        res.end(JSON.stringify({
           song: {
             id: song.id,
             name: song.title,
@@ -167,9 +175,10 @@ module.exports = async (req, res) => {
             url: urlResult.url,
             platform: 'netease'
           }
-        });
+        }));
       } else {
-        res.status(404).json({ error: '未找到音乐' });
+        res.writeHead(404, corsHeaders);
+        res.end(JSON.stringify({ error: '未找到音乐' }));
       }
       return;
     }
@@ -180,7 +189,8 @@ module.exports = async (req, res) => {
       console.log(`[多平台搜索请求] 关键词: "${query}"`);
       
       if (!query) {
-        res.status(400).json({ error: '请提供搜索关键词' });
+        res.writeHead(400, corsHeaders);
+        res.end(JSON.stringify({ error: '请提供搜索关键词' }));
         return;
       }
 
@@ -219,7 +229,8 @@ module.exports = async (req, res) => {
       }
 
       const allSongs = [...neteaseSongs, ...otherSongs];
-      res.json({ songs: allSongs });
+      res.writeHead(200, corsHeaders);
+      res.end(JSON.stringify({ songs: allSongs }));
       return;
     }
 
@@ -227,10 +238,11 @@ module.exports = async (req, res) => {
     if (path === '/api/song/url/multi' || path === '/_/backend/api/song/url/multi') {
       const id = url.searchParams.get('id');
       const platform = url.searchParams.get('platform') || 'netease';
-      console.log(`[多平台URL请求] 歌曲ID: ${id}, 平台: ${platform}`);
+      console.log(`[多平台URL请求] 歌曲ID: ${id}, 平台: ${platform}"`);
       
       if (!id) {
-        res.status(400).json({ error: '请提供歌曲ID' });
+        res.writeHead(400, corsHeaders);
+        res.end(JSON.stringify({ error: '请提供歌曲ID' }));
         return;
       }
 
@@ -240,27 +252,32 @@ module.exports = async (req, res) => {
           br: 320000
         });
 
-        const url = result.body.data?.[0]?.url;
-        if (url) {
-          res.json({ url });
+        const songUrl = result.body.data?.[0]?.url;
+        if (songUrl) {
+          res.writeHead(200, corsHeaders);
+          res.end(JSON.stringify({ url: songUrl }));
         } else {
-          res.status(404).json({ error: '无法获取音乐URL' });
+          res.writeHead(404, corsHeaders);
+          res.end(JSON.stringify({ error: '无法获取音乐URL' }));
         }
       } else {
         const urlResult = await getMusicUrl({
           id: id,
           provider: platform
         });
-        res.json({ url: urlResult.url });
+        res.writeHead(200, corsHeaders);
+        res.end(JSON.stringify({ url: urlResult.url }));
       }
       return;
     }
 
     // 404
-    res.status(404).json({ error: 'API 端点不存在' });
+    res.writeHead(404, corsHeaders);
+    res.end(JSON.stringify({ error: 'API 端点不存在' }));
 
   } catch (error) {
     console.error('[API 错误]', error);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.writeHead(500, corsHeaders);
+    res.end(JSON.stringify({ error: '服务器内部错误' }));
   }
 };
