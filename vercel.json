@@ -3,15 +3,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/_/backend/(.*)",
-      "dest": "/api/index"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/$1",
-      "check": true
+      "source": "/_/backend/(.*)",
+      "destination": "/api/index"
     }
   ],
   "env": {
