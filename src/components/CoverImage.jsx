@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config';
 
 function CoverImage({ songId, title, artist }) {
   const [coverUrl, setCoverUrl] = useState(null);
@@ -21,7 +20,8 @@ function CoverImage({ songId, title, artist }) {
         setLoading(true);
         setError(false);
         
-        const url = `${API_BASE_URL}/api/song/detail?id=${songId}`;
+        // 使用外部 API 获取封面
+        const url = `https://api.injahow.cn/meting/?type=song&id=${songId}`;
         console.log('[CoverImage] 请求URL:', url);
         
         const response = await fetch(url);
@@ -34,11 +34,9 @@ function CoverImage({ songId, title, artist }) {
         const result = await response.json();
         console.log('[CoverImage] API结果:', result);
         
-        if (result && result.cover) {
-          // 将 HTTP 转换为 HTTPS
-          const httpsUrl = result.cover.replace(/^http:\/\//, 'https://');
-          console.log('[CoverImage] 封面URL:', httpsUrl);
-          setCoverUrl(httpsUrl);
+        if (result && result[0] && result[0].pic) {
+          console.log('[CoverImage] 封面URL:', result[0].pic);
+          setCoverUrl(result[0].pic);
         } else {
           console.log('[CoverImage] 没有封面URL');
           setError(true);

@@ -24,7 +24,7 @@ router.get('/api/search', async (req, res) => {
     const result = await NeteaseCloudMusicApi.search({
       keywords: query,
       type: 1, // 1: 单曲
-      limit: 10
+      limit: 20
     });
     
     // 转换结果格式

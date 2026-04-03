@@ -191,9 +191,9 @@ function App() {
         [song.id]: 0
       }));
       
-      // 通过后端API获取音乐URL
+      // 尝试外部 API
       console.log('[下载] 获取URL，歌曲ID:', song.id);
-      const response = await fetch(`${API_BASE_URL}/api/song/url?id=${song.id}`);
+      const response = await fetch(`https://api.injahow.cn/meting/?type=song&id=${song.id}`);
       const result = await response.json();
       
       console.log('[下载] API结果:', result);
@@ -253,19 +253,57 @@ function App() {
   const fetchLyrics = async (songId) => {
     try {
       console.log('[歌词] 获取歌词，歌曲ID:', songId);
-      const response = await fetch(`${API_BASE_URL}/api/song/lyric?id=${songId}`);
+      
+      // 尝试外部 API
+      const url = `https://api.injahow.cn/meting/?type=song&id=${songId}`;
+      console.log('[歌词] 请求URL:', url);
+      
+      const response = await fetch(url);
       const result = await response.json();
       
       console.log('[歌词] API结果:', result);
       
-      if (result && result.lyric) {
-        setLyrics(prev => ({
-          ...prev,
-          [songId]: result.lyric
-        }));
+      if (result && result[0] && result[0].lrc) {
+        // 获取歌词内容
+        const lrcResponse = await fetch(result[0].lrc);
+        const lrcText = await lrcResponse.text();
+        console.log('[歌词] 歌词内容:', lrcText);
+        setLyrics(prev => ({ ...prev, [songId]: lrcText }));
+        return lrcText;
+      } else {
+        // 外部 API 失败，尝试我们的后端
+        try {
+          const backupResponse = await fetch(`${API_BASE_URL}/api/song/lyric?id=${songId}`);
+          const backupResult = await backupResponse.json();
+          
+          console.log('[歌词] 备份API结果:', backupResult);
+          
+          if (backupResult && backupResult.lyric) {
+            setLyrics(prev => ({
+              ...prev,
+              [songId]: backupResult.lyric
+            }));
+          }
+        } catch (backupErr) {
+          console.error('[歌词] 备份获取失败:', backupErr);
+        }
       }
     } catch (err) {
-      console.error('获取歌词错误:', err);
+      console.error('[歌词] 获取失败:', err);
+      // 外部 API 失败，尝试我们的后端
+      try {
+        const backupResponse = await fetch(`${API_BASE_URL}/api/song/lyric?id=${songId}`);
+        const backupResult = await backupResponse.json();
+        
+        if (backupResult && backupResult.lyric) {
+          setLyrics(prev => ({
+            ...prev,
+            [songId]: backupResult.lyric
+          }));
+        }
+      } catch (backupErr) {
+        console.error('[歌词] 备份获取失败:', backupErr);
+      }
     }
   };
 
@@ -295,31 +333,65 @@ function App() {
         return;
       }
       
-      // 通过后端API获取音乐URL
+      // 尝试外部 API
       console.log('[预览] 获取URL，歌曲ID:', song.id);
-      const response = await fetch(`${API_BASE_URL}/api/song/url?id=${song.id}`);
+      const response = await fetch(`https://api.injahow.cn/meting/?type=song&id=${song.id}`);
       const result = await response.json();
       
       console.log('[预览] API结果:', result);
       
-      if (result && result.url) {
-        // 将 HTTP 链接转换为 HTTPS
-        const httpsUrl = result.url.replace(/^http:\/\//, 'https://');
-        console.log('[预览] 转换后的URL:', httpsUrl);
-        
+      if (result && result[0] && result[0].url) {
         // 创建带真实URL的歌曲对象
         const songWithUrl = {
           ...song,
-          url: httpsUrl,
+          url: result[0].url,
           songId: song.id
         };
         setCurrentSong(songWithUrl);
         
         // 获取歌词
-        fetchLyrics(song.id);
+        if (result[0].lrc) {
+          try {
+            const lrcResponse = await fetch(result[0].lrc);
+            const lrcText = await lrcResponse.text();
+            console.log('[歌词] 歌词内容:', lrcText);
+            setLyrics(prev => ({
+              ...prev,
+              [song.id]: lrcText
+            }));
+          } catch (lrcErr) {
+            console.error('获取歌词错误:', lrcErr);
+          }
+        }
       } else {
-        console.error('获取预览链接失败:', result.error);
-        alert(`无法获取预览链接\n${result.note || ''}`);
+        // 外部 API 失败，尝试我们的后端
+        try {
+          const backupResponse = await fetch(`${API_BASE_URL}/api/song/url?id=${song.id}`);
+          const backupResult = await backupResponse.json();
+          
+          if (backupResult && backupResult.url) {
+            // 将 HTTP 链接转换为 HTTPS
+            const httpsUrl = backupResult.url.replace(/^http:\/\//, 'https://');
+            console.log('[预览] 转换后的URL:', httpsUrl);
+            
+            // 创建带真实URL的歌曲对象
+            const songWithUrl = {
+              ...song,
+              url: httpsUrl,
+              songId: song.id
+            };
+            setCurrentSong(songWithUrl);
+            
+            // 获取歌词
+            fetchLyrics(song.id);
+          } else {
+            console.error('获取预览链接失败:', backupResult.error);
+            alert(`无法获取预览链接\n${backupResult.note || ''}`);
+          }
+        } catch (backupErr) {
+          console.error('备份预览错误:', backupErr);
+          alert('预览失败，请稍后重试');
+        }
       }
     } catch (err) {
       console.error('预览错误:', err);
