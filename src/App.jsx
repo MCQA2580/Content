@@ -184,7 +184,7 @@ function App() {
   };
 
   // 使用API解析器实现音乐下载
-  const handleDownload = async (song) => {
+  const handleDownload = async (song, bitrate = 320) => {
     try {
       // 开始下载前设置进度
       setDownloadProgress(prev => ({
@@ -193,8 +193,8 @@ function App() {
       }));
       
       // 尝试外部 API
-      console.log('[下载] 获取URL，歌曲ID:', song.id);
-      const response = await fetch(`https://api.qijieya.cn/meting/?type=song&id=${song.id}`);
+      console.log('[下载] 获取URL，歌曲ID:', song.id, '比特率:', bitrate);
+      const response = await fetch(`https://api.qijieya.cn/meting/?type=song&id=${song.id}&br=${bitrate}`);
       const result = await response.json();
       
       console.log('[下载] API结果:', result);
@@ -209,7 +209,7 @@ function App() {
           // 创建下载链接
           const link = document.createElement('a');
           link.href = audioUrl;
-          link.download = `${song.title} - ${song.artist}.mp3`;
+          link.download = `${song.title} - ${song.artist} (${bitrate}k).mp3`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -227,16 +227,16 @@ function App() {
             }));
             
             // 3秒后清除进度
-            setTimeout(() => {
-              setDownloadProgress(prev => {
-                const newProgress = { ...prev };
-                delete newProgress[song.id];
-                return newProgress;
-              });
-            }, 3000);
-          }, 1000);
-          
-          alert(`开始下载: ${song.title} - ${song.artist}`);
+          setTimeout(() => {
+            setDownloadProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[song.id];
+              return newProgress;
+            });
+          }, 3000);
+        }, 1000);
+        
+        alert(`开始下载: ${song.title} - ${song.artist} (${bitrate}k)`);
         } catch (audioErr) {
           console.error('获取音频 URL 错误:', audioErr);
           alert('获取音频失败，请稍后重试');
@@ -249,7 +249,7 @@ function App() {
       } else {
         // 外部 API 失败，尝试我们的后端
         try {
-          const backupResponse = await fetch(`${API_BASE_URL}/api/song/url?id=${song.id}`);
+          const backupResponse = await fetch(`${API_BASE_URL}/api/song/url?id=${song.id}&br=${bitrate}`);
           const backupResult = await backupResponse.json();
           
           if (backupResult && backupResult.url) {
@@ -260,7 +260,7 @@ function App() {
             // 创建下载链接
             const link = document.createElement('a');
             link.href = httpsUrl;
-            link.download = `${song.title} - ${song.artist}.mp3`;
+            link.download = `${song.title} - ${song.artist} (${bitrate}k).mp3`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -282,7 +282,7 @@ function App() {
               }, 3000);
             }, 1000);
             
-            alert(`开始下载: ${song.title} - ${song.artist}`);
+            alert(`开始下载: ${song.title} - ${song.artist} (${bitrate}k)`);
           } else {
             console.error('获取下载链接失败:', backupResult.error);
             alert(`无法获取下载链接: ${song.title} - ${song.artist}\n${backupResult.note || ''}`);
@@ -587,17 +587,28 @@ function App() {
                       >
                         {currentSong?.id === song.id ? '停止' : '预览'}
                       </button>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => handleDownload(song)}
-                        disabled={loading || downloadProgress[song.id] !== undefined}
-                      >
-                        {downloadProgress[song.id] !== undefined ? (
-                          <span className="download-progress">
-                            {downloadProgress[song.id]}%
-                          </span>
-                        ) : '下载'}
-                      </button>
+                      <div className="download-options">
+                        <button 
+                          className="btn btn-primary"
+                          onClick={() => handleDownload(song, 320)}
+                          disabled={loading || downloadProgress[song.id] !== undefined}
+                          title="高品质 (320k)"
+                        >
+                          {downloadProgress[song.id] !== undefined ? (
+                            <span className="download-progress">
+                              {downloadProgress[song.id]}%
+                            </span>
+                          ) : '320k'}
+                        </button>
+                        <button 
+                          className="btn btn-primary"
+                          onClick={() => handleDownload(song, 128)}
+                          disabled={loading || downloadProgress[song.id] !== undefined}
+                          title="标准品质 (128k)"
+                        >
+                          128k
+                        </button>
+                      </div>
                     </div>
                     
                     {/* 音频播放器 */}
