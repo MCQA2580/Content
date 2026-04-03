@@ -488,9 +488,12 @@ body {
   flex-direction: row;
   min-height: 200px;
   align-items: stretch;
+  position: relative;
+  z-index: 1;
 }
 
 .result-card:hover {
+  z-index: 10;
   transform: translateY(-5px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
@@ -728,6 +731,8 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+  z-index: 15;
 }
 
 .player-content {
