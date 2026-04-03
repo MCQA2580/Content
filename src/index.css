@@ -507,10 +507,10 @@ body {
 .card-left {
   display: flex;
   flex-direction: column;
-  width: 400px;
+  width: 450px;
   flex-shrink: 0;
   position: relative;
-  z-index: 10;
+  z-index: 100;
 }
 
 .card-cover {
@@ -735,12 +735,12 @@ body {
   border-left: 1px solid var(--border-color);
   background-color: rgba(102, 126, 234, 0.05);
   flex: 1;
-  min-width: 350px;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
-  z-index: 5;
+  z-index: 1;
   overflow: auto;
 }
 
