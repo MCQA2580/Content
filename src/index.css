@@ -105,6 +105,71 @@ body {
   gap: 1.5rem;
 }
 
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .navbar-container {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 1rem;
+  }
+  
+  .navbar-left {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+  
+  .navbar-features {
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .feature-badge {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.7rem;
+  }
+  
+  .brand-title {
+    font-size: 1.5rem;
+  }
+  
+  .brand-subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .backend-status {
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-container {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .brand-title {
+    font-size: 1.3rem;
+  }
+  
+  .feature-badge {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.65rem;
+  }
+  
+  .navbar-features {
+    gap: 0.3rem;
+  }
+  
+  .status-indicator {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  
+  .heartbeat-time {
+    font-size: 0.65rem;
+  }
+}
+
 /* 后端状态指示器 */
 .backend-status {
   display: flex;
