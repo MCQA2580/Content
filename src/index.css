@@ -9,12 +9,12 @@
   --primary-color: #667eea;
   --primary-hover: #5a6fd8;
   --secondary-color: #764ba2;
-  --background-color: #f8f9fa;
-  --card-background: #ffffff;
-  --text-primary: #333333;
-  --text-secondary: #666666;
-  --text-light: #999999;
-  --border-color: #e0e0e0;
+  --background-color: #0a0a14;
+  --card-background: #1a1a30;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0c0;
+  --text-light: #808090;
+  --border-color: #303040;
   --border-radius: 12px;
   --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease;
@@ -37,11 +37,12 @@ body {
 
 /* 导航栏 */
 .navbar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  background: rgba(16, 16, 32, 0.95);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   position: sticky;
   top: 0;
   z-index: 1000;
+  backdrop-filter: blur(10px);
 }
 
 .navbar-container {
@@ -271,7 +272,7 @@ body {
 
 /* 英雄区域 */
 .hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #101020 0%, #1a1a30 100%);
   color: white;
   padding: 6rem 0;
   text-align: center;
@@ -286,8 +287,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.3;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(60,100,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  opacity: 0.5;
   z-index: 1;
 }
 
@@ -331,26 +332,27 @@ body {
 .search-input {
   flex: 1;
   padding: 1.25rem 1.75rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(60, 100, 255, 0.2);
   border-radius: 2rem;
   font-size: 1.1rem;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   outline: none;
   transition: var(--transition);
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(30, 30, 50, 0.8);
   backdrop-filter: blur(10px);
+  color: white;
 }
 
 .search-input:focus {
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3);
-  border-color: #667eea;
-  background: white;
+  box-shadow: 0 0 0 4px rgba(60, 100, 255, 0.3);
+  border-color: #3c64ff;
+  background: rgba(30, 30, 50, 0.9);
 }
 
 .search-btn {
   padding: 1.25rem 2.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3c64ff 0%, #2a4bff 100%);
   color: white;
   border: none;
   border-radius: 2rem;
@@ -362,12 +364,12 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(60, 100, 255, 0.3);
 }
 
 .search-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 20px rgba(60, 100, 255, 0.4);
 }
 
 .hero-suggestions {
@@ -669,14 +671,16 @@ body {
 }
 
 .btn-primary {
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, #3c64ff 0%, #2a4bff 100%);
   color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(60, 100, 255, 0.3);
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-hover);
+  background: linear-gradient(135deg, #4c74ff 0%, #3a5bff 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 20px rgba(60, 100, 255, 0.4);
 }
 
 .btn-secondary {
@@ -794,8 +798,8 @@ body {
 
 /* 页脚 */
 .footer {
-  background-color: var(--card-background);
-  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, #101020 0%, #1a1a30 100%);
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.2);
   padding: 3rem 0;
   margin-top: 4rem;
 }
