@@ -646,6 +646,11 @@ body {
   align-items: center;
 }
 
+.card-actions .btn-secondary {
+  min-width: 70px;
+  text-align: center;
+}
+
 .download-options {
   display: flex;
   gap: 0.5rem;
