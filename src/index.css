@@ -494,6 +494,7 @@ body {
   z-index: 1;
   max-width: 1000px;
   margin: 0 auto 2rem;
+  width: 100%;
 }
 
 .result-card:hover {
@@ -736,7 +737,8 @@ body {
   flex-direction: column;
   justify-content: center;
   position: relative;
-  z-index: 15;
+  z-index: 5;
+  overflow: auto;
 }
 
 .player-content {
