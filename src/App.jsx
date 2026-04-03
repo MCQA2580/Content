@@ -200,32 +200,52 @@ function App() {
       console.log('[下载] API结果:', result);
       
       if (result && Array.isArray(result) && result[0] && result[0].url) {
-        // 直接使用 API 返回的 URL 进行下载
-        const link = document.createElement('a');
-        link.href = result[0].url;
-        link.download = `${song.title} - ${song.artist}.mp3`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // 模拟下载完成
-        setTimeout(() => {
-          setDownloadProgress(prev => ({
-            ...prev,
-            [song.id]: 100
-          }));
+        // 获取真实的音频 URL
+        try {
+          const audioResponse = await fetch(result[0].url);
+          const audioBlob = await audioResponse.blob();
+          const audioUrl = URL.createObjectURL(audioBlob);
           
-          // 3秒后清除进度
+          // 创建下载链接
+          const link = document.createElement('a');
+          link.href = audioUrl;
+          link.download = `${song.title} - ${song.artist}.mp3`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // 释放 URL 对象
           setTimeout(() => {
-            setDownloadProgress(prev => {
-              const newProgress = { ...prev };
-              delete newProgress[song.id];
-              return newProgress;
-            });
-          }, 3000);
-        }, 1000);
-        
-        alert(`开始下载: ${song.title} - ${song.artist}`);
+            URL.revokeObjectURL(audioUrl);
+          }, 1000);
+          
+          // 模拟下载完成
+          setTimeout(() => {
+            setDownloadProgress(prev => ({
+              ...prev,
+              [song.id]: 100
+            }));
+            
+            // 3秒后清除进度
+            setTimeout(() => {
+              setDownloadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[song.id];
+                return newProgress;
+              });
+            }, 3000);
+          }, 1000);
+          
+          alert(`开始下载: ${song.title} - ${song.artist}`);
+        } catch (audioErr) {
+          console.error('获取音频 URL 错误:', audioErr);
+          alert('获取音频失败，请稍后重试');
+          setDownloadProgress(prev => {
+            const newProgress = { ...prev };
+            delete newProgress[song.id];
+            return newProgress;
+          });
+        }
       } else {
         // 外部 API 失败，尝试我们的后端
         try {
