@@ -95,18 +95,18 @@ function App() {
       checkBackendHealth();
     }, 30000);
     
-    // 三秒后隐藏英雄区域
-    const hideHeroTimeout = setTimeout(() => {
-      const heroSection = document.querySelector('.hero');
-      if (heroSection) {
-        heroSection.style.display = 'none';
+    // 三秒后隐藏导航栏
+    const hideNavbarTimeout = setTimeout(() => {
+      const navbar = document.querySelector('.navbar');
+      if (navbar) {
+        navbar.style.display = 'none';
       }
     }, 3000);
     
     // 清理函数
     return () => {
       clearInterval(heartbeatInterval);
-      clearTimeout(hideHeroTimeout);
+      clearTimeout(hideNavbarTimeout);
     };
   }, []);
 
