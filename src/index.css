@@ -501,8 +501,8 @@ body {
 .card-left {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-width: 300px;
+  width: 350px;
+  flex-shrink: 0;
 }
 
 .card-cover {
@@ -727,7 +727,7 @@ body {
   border-left: 1px solid var(--border-color);
   background-color: rgba(102, 126, 234, 0.05);
   flex: 1;
-  min-width: 300px;
+  min-width: 350px;
   display: flex;
   flex-direction: column;
   justify-content: center;
