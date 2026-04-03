@@ -705,15 +705,16 @@ body {
 }
 
 .btn-secondary {
-  background-color: var(--card-background);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(135deg, #3c64ff 0%, #2a4bff 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(60, 100, 255, 0.3);
 }
 
 .btn-secondary:hover {
-  background-color: var(--background-color);
-  border-color: var(--primary-color);
+  background: linear-gradient(135deg, #4c74ff 0%, #3a5bff 100%);
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(60, 100, 255, 0.4);
 }
 
 .btn:disabled {
