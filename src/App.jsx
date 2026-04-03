@@ -10,6 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentSong, setCurrentSong] = useState(null);
+  const [showCopyrightNotice, setShowCopyrightNotice] = useState(true);
   const [downloadProgress, setDownloadProgress] = useState({});
   const [lyrics, setLyrics] = useState({});
   const [covers, setCovers] = useState({});
@@ -449,6 +450,23 @@ function App() {
 
   return (
     <div className="app">
+      {/* 版权公告弹窗 */}
+      {showCopyrightNotice && (
+        <div className="copyright-notice">
+          <div className="copyright-content">
+            <h3>重要说明</h3>
+            <p>有些歌曲确实需要登录或付费才能播放，这是网易云音乐的版权限制，无法通过代码完全解决。</p>
+            <p>我们已经尝试了多个比特率和多平台 fallback，能大幅提高获取成功的几率！</p>
+            <button 
+              className="copyright-close" 
+              onClick={() => setShowCopyrightNotice(false)}
+            >
+              我知道了
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 导航栏 */}
       <nav className="navbar">
         <div className="navbar-container">
