@@ -385,37 +385,27 @@ function App() {
       console.log('[预览] API结果:', result);
       
       if (result && result[0] && result[0].url) {
-        // 获取真实的音频 URL
-        try {
-          const audioResponse = await fetch(result[0].url);
-          const audioBlob = await audioResponse.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
-          
-          // 创建带真实URL的歌曲对象
-          const songWithUrl = {
-            ...song,
-            url: audioUrl,
-            songId: song.id
-          };
-          setCurrentSong(songWithUrl);
-          
-          // 获取歌词
-          if (result[0].lrc) {
-            try {
-              const lrcResponse = await fetch(result[0].lrc);
-              const lrcText = await lrcResponse.text();
-              console.log('[歌词] 歌词内容:', lrcText);
-              setLyrics(prev => ({
-                ...prev,
-                [song.id]: lrcText
-              }));
-            } catch (lrcErr) {
-              console.error('获取歌词错误:', lrcErr);
-            }
+        // 直接使用 API 返回的 URL
+        const songWithUrl = {
+          ...song,
+          url: result[0].url,
+          songId: song.id
+        };
+        setCurrentSong(songWithUrl);
+        
+        // 获取歌词
+        if (result[0].lrc) {
+          try {
+            const lrcResponse = await fetch(result[0].lrc);
+            const lrcText = await lrcResponse.text();
+            console.log('[歌词] 歌词内容:', lrcText);
+            setLyrics(prev => ({
+              ...prev,
+              [song.id]: lrcText
+            }));
+          } catch (lrcErr) {
+            console.error('获取歌词错误:', lrcErr);
           }
-        } catch (audioErr) {
-          console.error('获取音频 URL 错误:', audioErr);
-          alert('获取音频失败，请稍后重试');
         }
       } else {
         // 外部 API 失败，尝试我们的后端
