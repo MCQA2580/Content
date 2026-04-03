@@ -495,13 +495,6 @@ function App() {
               <h1 className="brand-title">音乐解析器</h1>
               <p className="brand-subtitle">搜索、解析和下载您喜爱的音乐</p>
             </div>
-            {/* 后端状态指示器 */}
-            <BackendStatusIndicator
-              backendStatus={backendStatus}
-              lastHeartbeat={lastHeartbeat}
-              activatingBackend={activatingBackend}
-              onActivate={activateBackend}
-            />
           </div>
           <div className="navbar-features">
             <span className="feature-badge">网易云音乐</span>
@@ -652,6 +645,14 @@ function App() {
           <div className="footer-info">
             <h3 className="footer-title">音乐解析器</h3>
             <p className="footer-description">搜索、解析和下载您喜爱的音乐</p>
+          </div>
+          <div className="footer-status">
+            <BackendStatusIndicator
+              backendStatus={backendStatus}
+              lastHeartbeat={lastHeartbeat}
+              activatingBackend={activatingBackend}
+              onActivate={activateBackend}
+            />
           </div>
           <div className="footer-links">
             <a href="https://github.com/MCQA2580/Content" target="_blank" rel="noopener noreferrer" className="footer-link">开源项目</a>
