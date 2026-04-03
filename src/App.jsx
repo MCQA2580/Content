@@ -9,7 +9,8 @@ function App() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [currentSong, setCurrentSong] = useState(null);
+  const [currentSongId, setCurrentSongId] = useState(null);
+  const [currentSongUrl, setCurrentSongUrl] = useState(null);
   const [showCopyrightNotice, setShowCopyrightNotice] = useState(true);
   const [downloadProgress, setDownloadProgress] = useState({});
   const [lyrics, setLyrics] = useState({});
@@ -395,8 +396,9 @@ function App() {
   const handlePreview = async (song) => {
     try {
       // 如果已经在播放当前歌曲，则停止
-      if (currentSong?.id === song.id) {
-        setCurrentSong(null);
+      if (currentSongId === song.id) {
+        setCurrentSongId(null);
+        setCurrentSongUrl(null);
         return;
       }
       
@@ -409,12 +411,8 @@ function App() {
       
       if (result && result[0] && result[0].url) {
         // 直接使用 API 返回的 URL
-        const songWithUrl = {
-          ...song,
-          url: result[0].url,
-          songId: song.id
-        };
-        setCurrentSong(songWithUrl);
+        setCurrentSongId(song.id);
+        setCurrentSongUrl(result[0].url);
         
         // 获取歌词
         if (result[0].lrc) {
@@ -441,13 +439,8 @@ function App() {
             const httpsUrl = backupResult.url.replace(/^http:\/\//, 'https://');
             console.log('[预览] 转换后的URL:', httpsUrl);
             
-            // 创建带真实URL的歌曲对象
-            const songWithUrl = {
-              ...song,
-              url: httpsUrl,
-              songId: song.id
-            };
-            setCurrentSong(songWithUrl);
+            setCurrentSongId(song.id);
+            setCurrentSongUrl(httpsUrl);
             
             // 获取歌词
             fetchLyrics(song.id);
@@ -468,7 +461,8 @@ function App() {
 
   // 停止预览
   const handleStopPreview = () => {
-    setCurrentSong(null);
+    setCurrentSongId(null);
+    setCurrentSongUrl(null);
   };
 
   return (
@@ -588,7 +582,7 @@ function App() {
                         onClick={() => handlePreview(song)}
                         disabled={loading}
                       >
-                        {currentSong?.id === song.id ? '停止' : '预览'}
+                        {currentSongId === song.id ? '停止' : '预览'}
                       </button>
                       <div className="download-options">
                         <button 
@@ -631,21 +625,21 @@ function App() {
                     </div>
                     
                     {/* 音频播放器 */}
-                    {currentSong?.id === song.id && (
+                    {currentSongId === song.id && currentSongUrl && (
                       <div className="card-player">
                         <div className="player-content">
                           <audio controls autoPlay className="preview-audio">
-                            <source src={currentSong.url} type="audio/mpeg" />
+                            <source src={currentSongUrl} type="audio/mpeg" />
                             您的浏览器不支持音频播放
-                          </audio>
+                           </audio>
                         </div>
                         
                         {/* 歌词 */}
-                        {lyrics[currentSong.songId] && (
+                        {lyrics[song.id] && (
                           <div className="player-lyrics">
                             <h5>歌词</h5>
                             <div className="lyrics-content">
-                              {lyrics[currentSong.songId].split('\n').map((line, index) => (
+                              {lyrics[song.id].split('\n').map((line, index) => (
                                 <div key={index} className="lyric-line">
                                   {line}
                                 </div>
