@@ -13,6 +13,7 @@ function App() {
   const [downloadProgress, setDownloadProgress] = useState({});
   const [lyrics, setLyrics] = useState({});
   const [covers, setCovers] = useState({});
+  const [songStatus, setSongStatus] = useState({}); // 存储每首歌的播放状态
   const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'online', 'offline'
   const [lastHeartbeat, setLastHeartbeat] = useState(null);
   const [activatingBackend, setActivatingBackend] = useState(false);
@@ -98,11 +99,32 @@ function App() {
     };
   }, []);
 
+  // 检查歌曲播放状态
+  const checkSongStatus = async (songId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/song/url?id=${songId}`);
+      const result = await response.json();
+      
+      if (result && result.url) {
+        return 'available'; // 可以直接播放
+      } else if (result && result.error) {
+        if (result.error.includes('登录') || result.error.includes('付费')) {
+          return 'paywall'; // 需要付费或登录
+        }
+      }
+      return 'maybe'; // 可能需要登录
+    } catch (err) {
+      console.error('[状态检查] 错误:', err);
+      return 'maybe';
+    }
+  };
+
   // 搜索音乐
   const searchMusic = async (query) => {
     setLoading(true);
     setError(null);
     setResults([]);
+    setSongStatus({});
     
     try {
       console.log('[搜索] 开始搜索:', query);
@@ -126,6 +148,19 @@ function App() {
         console.log('[搜索] 格式化结果:', formattedResults);
         console.log('[搜索] 第一首歌 picId:', formattedResults[0]?.picId);
         setResults(formattedResults);
+        
+        // 异步检查每首歌的状态
+        const newStatus = {};
+        for (const song of formattedResults) {
+          newStatus[song.id] = 'checking';
+        }
+        setSongStatus(newStatus);
+        
+        // 并行检查状态，但不要阻塞 UI
+        formattedResults.forEach(async (song) => {
+          const status = await checkSongStatus(song.id);
+          setSongStatus(prev => ({ ...prev, [song.id]: status }));
+        });
       } else {
         setError('未找到结果');
         console.log('[搜索] 未找到结果');
@@ -384,7 +419,15 @@ function App() {
                     
                     {/* 歌曲信息 */}
                     <div className="card-info">
-                      <h4 className="song-title">{song.title}</h4>
+                      <div className="song-title-row">
+                        <h4 className="song-title">{song.title}</h4>
+                        <span className="song-status">
+                          {songStatus[song.id] === 'checking' && <span className="status-checking">⏳</span>}
+                          {songStatus[song.id] === 'available' && <span className="status-available">✅</span>}
+                          {songStatus[song.id] === 'maybe' && <span className="status-maybe">⚠️</span>}
+                          {songStatus[song.id] === 'paywall' && <span className="status-paywall">🔒</span>}
+                        </span>
+                      </div>
                       <p className="song-artist">{song.artist}</p>
                       <p className="song-album">{song.album} · {typeof song.duration === 'number' ? `${Math.floor(song.duration / 60)}:${String(song.duration % 60).padStart(2, '0')}` : song.duration}</p>
                     </div>

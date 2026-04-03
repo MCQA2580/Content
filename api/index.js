@@ -1,6 +1,7 @@
 // Vercel Serverless Function
 
 const NeteaseCloudMusicApi = require('NeteaseCloudMusicApi');
+const { search, getMusicUrl } = require('musicfree-api');
 
 module.exports = async (req, res) => {
   // CORS 响应头
@@ -87,9 +88,19 @@ module.exports = async (req, res) => {
       try {
         console.log('[song_url] 开始获取URL, id:', id);
         
-        // 尝试多个比特率：原音质、320k、192k、128k
-        const bitrates = [null, 320000, 192000, 128000];
         let songUrl = null;
+        let songInfo = null;
+        
+        // 第一步：获取歌曲信息（歌名和歌手）
+        try {
+          const detailResult = await NeteaseCloudMusicApi.song_detail({ ids: id });
+          songInfo = detailResult.body.songs?.[0];
+        } catch (e) {
+          console.log('[song_url] 获取歌曲信息失败');
+        }
+        
+        // 第二步：尝试网易云音乐，多个比特率
+        const bitrates = [null, 320000, 192000, 128000];
         let result = null;
         
         for (let i = 0; i < bitrates.length; i++) {
@@ -99,27 +110,58 @@ module.exports = async (req, res) => {
             options.br = br;
           }
           
-          console.log(`[song_url] 尝试比特率: ${br || '原音质'}`);
+          console.log(`[song_url] 尝试网易云比特率: ${br || '原音质'}`);
           result = await NeteaseCloudMusicApi.song_url(options);
           songUrl = result.body.data?.[0]?.url;
           
           if (songUrl) {
-            console.log(`[song_url] 成功获取URL (比特率: ${br || '原音质'}):`, songUrl);
-            break;
+            console.log(`[song_url] 网易云成功获取URL (比特率: ${br || '原音质'}):`, songUrl);
+            res.writeHead(200, headers);
+            res.end(JSON.stringify({ url: songUrl, platform: '网易云音乐' }));
+            return;
           }
         }
-
-        if (songUrl) {
-          res.writeHead(200, headers);
-          res.end(JSON.stringify({ url: songUrl }));
-        } else {
-          console.log('[song_url] 所有比特率都失败了，完整响应:', JSON.stringify(result?.body, null, 2));
-          res.writeHead(404, headers);
-          res.end(JSON.stringify({ 
-            error: '无法获取音乐URL',
-            note: '这首歌可能需要登录或付费才能播放'
-          }));
+        
+        // 第三步：如果网易云失败，尝试其他平台 fallback
+        if (songInfo) {
+          const songName = songInfo.name;
+          const artistName = songInfo.ar?.[0]?.name || '';
+          const searchQuery = `${songName} ${artistName}`.trim();
+          console.log(`[song_url] 网易云失败，尝试其他平台搜索: "${searchQuery}"`);
+          
+          const otherPlatforms = ['qq', 'kg']; // 先试QQ音乐和酷狗
+          
+          for (const plat of otherPlatforms) {
+            try {
+              console.log(`[song_url] 尝试平台: ${plat}`);
+              const searchResult = await search(plat, searchQuery, 1, 5);
+              
+              if (searchResult && searchResult.data && searchResult.data.length > 0) {
+                const matchedSong = searchResult.data[0];
+                console.log(`[song_url] 在 ${plat} 找到匹配歌曲:`, matchedSong.name);
+                
+                const urlResult = await getMusicUrl(plat, matchedSong.id);
+                if (urlResult && urlResult.url) {
+                  console.log(`[song_url] ${plat} 成功获取URL:`, urlResult.url);
+                  const platformName = { 'qq': 'QQ音乐', 'kg': '酷狗音乐', 'xm': '虾米音乐' }[plat] || plat;
+                  res.writeHead(200, headers);
+                  res.end(JSON.stringify({ url: urlResult.url, platform: platformName }));
+                  return;
+                }
+              }
+            } catch (platError) {
+              console.log(`[song_url] ${plat} 失败:`, platError.message);
+            }
+          }
         }
+        
+        // 所有平台都失败了
+        console.log('[song_url] 所有平台都失败了，完整响应:', JSON.stringify(result?.body, null, 2));
+        res.writeHead(404, headers);
+        res.end(JSON.stringify({ 
+          error: '无法获取音乐URL',
+          note: '这首歌可能需要登录或付费才能播放'
+        }));
         return;
       } catch (apiError) {
         console.error('[获取URL错误]', apiError);
