@@ -21,7 +21,7 @@ function CoverImage({ songId, title, artist }) {
         setError(false);
         
         // 使用外部 API 获取封面
-        const url = `https://api.injahow.cn/meting/?type=song&id=${songId}`;
+        const url = `https://api.qijieya.cn/meting/?type=song&id=${songId}`;
         console.log('[CoverImage] 请求URL:', url);
         
         const response = await fetch(url);

@@ -194,7 +194,7 @@ function App() {
       
       // 尝试外部 API
       console.log('[下载] 获取URL，歌曲ID:', song.id);
-      const response = await fetch(`https://api.injahow.cn/meting/?type=song&id=${song.id}`);
+      const response = await fetch(`https://api.qijieya.cn/meting/?type=song&id=${song.id}`);
       const result = await response.json();
       
       console.log('[下载] API结果:', result);
@@ -299,7 +299,7 @@ function App() {
       console.log('[歌词] 获取歌词，歌曲ID:', songId);
       
       // 尝试外部 API
-      const url = `https://api.injahow.cn/meting/?type=song&id=${songId}`;
+      const url = `https://api.qijieya.cn/meting/?type=song&id=${songId}`;
       console.log('[歌词] 请求URL:', url);
       
       const response = await fetch(url);
@@ -379,7 +379,7 @@ function App() {
       
       // 尝试外部 API
       console.log('[预览] 获取URL，歌曲ID:', song.id);
-      const response = await fetch(`https://api.injahow.cn/meting/?type=song&id=${song.id}`);
+      const response = await fetch(`https://api.qijieya.cn/meting/?type=song&id=${song.id}`);
       const result = await response.json();
       
       console.log('[预览] API结果:', result);
