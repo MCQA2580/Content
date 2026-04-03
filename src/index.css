@@ -472,9 +472,11 @@ body {
 
 /* 结果网格 */
 .results-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
+  align-items: center;
+  width: 100%;
 }
 
 /* 结果卡片 */
@@ -490,6 +492,8 @@ body {
   align-items: stretch;
   position: relative;
   z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto 2rem;
 }
 
 .result-card:hover {
@@ -501,7 +505,7 @@ body {
 .card-left {
   display: flex;
   flex-direction: column;
-  width: 350px;
+  width: 320px;
   flex-shrink: 0;
 }
 
@@ -727,7 +731,7 @@ body {
   border-left: 1px solid var(--border-color);
   background-color: rgba(102, 126, 234, 0.05);
   flex: 1;
-  min-width: 350px;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -951,7 +955,22 @@ body {
   }
 
   .results-grid {
-    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .result-card {
+    flex-direction: column;
+    max-width: 100%;
+  }
+
+  .card-left {
+    width: 100%;
+  }
+
+  .card-player {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+    min-width: 100%;
   }
 
   .card-actions {
