@@ -4,6 +4,7 @@
   "description": "Vercel Serverless Function API",
   "main": "index.js",
   "dependencies": {
-    "NeteaseCloudMusicApi": "^4.30.0"
+    "NeteaseCloudMusicApi": "^4.30.0",
+    "musicfree-api": "^1.0.0"
   }
 }
