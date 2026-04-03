@@ -485,12 +485,21 @@ body {
   overflow: hidden;
   transition: var(--transition);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  min-height: 200px;
+  align-items: stretch;
 }
 
 .result-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-left {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 300px;
 }
 
 .card-cover {
@@ -501,6 +510,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .cover-image {
@@ -711,8 +721,13 @@ body {
 /* 卡片播放器 */
 .card-player {
   padding: 1.5rem;
-  border-top: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-color);
   background-color: rgba(102, 126, 234, 0.05);
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .player-content {

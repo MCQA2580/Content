@@ -555,76 +555,79 @@ function App() {
               <div className="results-grid">
                 {results.map((song) => (
                   <div key={song.id} className="result-card">
-                    {/* 歌曲封面 */}
-                    <div className="card-cover">
-                      <CoverImage songId={song.id} title={song.title} artist={song.artist} />
-                    </div>
-                    
-                    {/* 歌曲信息 */}
-                    <div className="card-info">
-                      <div className="song-title-row">
-                        <h4 className="song-title">{song.title}</h4>
-                        <span className="song-status">
-                          {songStatus[song.id] === 'checking' && <span className="status-checking">⏳</span>}
-                          {songStatus[song.id] === 'available' && <span className="status-available">✅</span>}
-                          {songStatus[song.id] === 'maybe' && <span className="status-maybe">⚠️</span>}
-                          {songStatus[song.id] === 'paywall' && <span className="status-paywall">🔒</span>}
-                        </span>
+                    {/* 左侧：封面、信息和操作按钮 */}
+                    <div className="card-left">
+                      {/* 歌曲封面 */}
+                      <div className="card-cover">
+                        <CoverImage songId={song.id} title={song.title} artist={song.artist} />
                       </div>
-                      <p className="song-artist">{song.artist}</p>
-                      <p className="song-album">{song.album} · {typeof song.duration === 'number' ? `${Math.floor(song.duration / 60)}:${String(song.duration % 60).padStart(2, '0')}` : song.duration}</p>
-                    </div>
-                    
-                    {/* 操作按钮 */}
-                    <div className="card-actions">
-                      <button 
-                        className="btn btn-secondary"
-                        onClick={() => handlePreview(song)}
-                        disabled={loading}
-                      >
-                        {currentSongId === song.id ? '停止' : '预览'}
-                      </button>
-                      <div className="download-options">
+                      
+                      {/* 歌曲信息 */}
+                      <div className="card-info">
+                        <div className="song-title-row">
+                          <h4 className="song-title">{song.title}</h4>
+                          <span className="song-status">
+                            {songStatus[song.id] === 'checking' && <span className="status-checking">⏳</span>}
+                            {songStatus[song.id] === 'available' && <span className="status-available">✅</span>}
+                            {songStatus[song.id] === 'maybe' && <span className="status-maybe">⚠️</span>}
+                            {songStatus[song.id] === 'paywall' && <span className="status-paywall">🔒</span>}
+                          </span>
+                        </div>
+                        <p className="song-artist">{song.artist}</p>
+                        <p className="song-album">{song.album} · {typeof song.duration === 'number' ? `${Math.floor(song.duration / 60)}:${String(song.duration % 60).padStart(2, '0')}` : song.duration}</p>
+                      </div>
+                      
+                      {/* 操作按钮 */}
+                      <div className="card-actions">
                         <button 
-                          className="btn btn-primary"
-                          onClick={() => handleDownload(song, 999)}
-                          disabled={loading || downloadProgress[song.id] !== undefined}
-                          title="无损音质"
+                          className="btn btn-secondary"
+                          onClick={() => handlePreview(song)}
+                          disabled={loading}
                         >
-                          无损
+                          {currentSongId === song.id ? '停止' : '预览'}
                         </button>
-                        <button 
-                          className="btn btn-primary"
-                          onClick={() => handleDownload(song, 320)}
-                          disabled={loading || downloadProgress[song.id] !== undefined}
-                          title="高品质"
-                        >
-                          {downloadProgress[song.id] !== undefined ? (
-                            <span className="download-progress">
-                              {downloadProgress[song.id]}%
-                            </span>
-                          ) : '320k'}
-                        </button>
-                        <button 
-                          className="btn btn-primary"
-                          onClick={() => handleDownload(song, 192)}
-                          disabled={loading || downloadProgress[song.id] !== undefined}
-                          title="中等品质"
-                        >
-                          192k
-                        </button>
-                        <button 
-                          className="btn btn-primary"
-                          onClick={() => handleDownload(song, 128)}
-                          disabled={loading || downloadProgress[song.id] !== undefined}
-                          title="标准品质"
-                        >
-                          128k
-                        </button>
+                        <div className="download-options">
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => handleDownload(song, 999)}
+                            disabled={loading || downloadProgress[song.id] !== undefined}
+                            title="无损音质"
+                          >
+                            无损
+                          </button>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => handleDownload(song, 320)}
+                            disabled={loading || downloadProgress[song.id] !== undefined}
+                            title="高品质"
+                          >
+                            {downloadProgress[song.id] !== undefined ? (
+                              <span className="download-progress">
+                                {downloadProgress[song.id]}%
+                              </span>
+                            ) : '320k'}
+                          </button>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => handleDownload(song, 192)}
+                            disabled={loading || downloadProgress[song.id] !== undefined}
+                            title="中等品质"
+                          >
+                            192k
+                          </button>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => handleDownload(song, 128)}
+                            disabled={loading || downloadProgress[song.id] !== undefined}
+                            title="标准品质"
+                          >
+                            128k
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
-                    {/* 音频播放器 */}
+                    {/* 右侧：音频播放器 */}
                     {currentSongId === song.id && currentSongUrl && (
                       <div className="card-player">
                         <div className="player-content">
