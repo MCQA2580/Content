@@ -198,14 +198,10 @@ function App() {
       
       console.log('[下载] API结果:', result);
       
-      if (result && result.url) {
-        // 将 HTTP 链接转换为 HTTPS
-        const httpsUrl = result.url.replace(/^http:\/\//, 'https://');
-        console.log('[下载] 转换后的URL:', httpsUrl);
-        
+      if (result && Array.isArray(result) && result[0] && result[0].url) {
         // 创建下载链接
         const link = document.createElement('a');
-        link.href = httpsUrl;
+        link.href = result[0].url;
         link.download = `${song.title} - ${song.artist}.mp3`;
         document.body.appendChild(link);
         link.click();
@@ -230,13 +226,60 @@ function App() {
         
         alert(`开始下载: ${song.title} - ${song.artist}`);
       } else {
-        console.error('获取下载链接失败:', result.error);
-        alert(`无法获取下载链接: ${song.title} - ${song.artist}\n${result.note || ''}`);
-        setDownloadProgress(prev => {
-          const newProgress = { ...prev };
-          delete newProgress[song.id];
-          return newProgress;
-        });
+        // 外部 API 失败，尝试我们的后端
+        try {
+          const backupResponse = await fetch(`${API_BASE_URL}/api/song/url?id=${song.id}`);
+          const backupResult = await backupResponse.json();
+          
+          if (backupResult && backupResult.url) {
+            // 将 HTTP 链接转换为 HTTPS
+            const httpsUrl = backupResult.url.replace(/^http:/, 'https://');
+            console.log('[下载] 转换后的URL:', httpsUrl);
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = httpsUrl;
+            link.download = `${song.title} - ${song.artist}.mp3`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // 模拟下载完成
+            setTimeout(() => {
+              setDownloadProgress(prev => ({
+                ...prev,
+                [song.id]: 100
+              }));
+              
+              // 3秒后清除进度
+              setTimeout(() => {
+                setDownloadProgress(prev => {
+                  const newProgress = { ...prev };
+                  delete newProgress[song.id];
+                  return newProgress;
+                });
+              }, 3000);
+            }, 1000);
+            
+            alert(`开始下载: ${song.title} - ${song.artist}`);
+          } else {
+            console.error('获取下载链接失败:', backupResult.error);
+            alert(`无法获取下载链接: ${song.title} - ${song.artist}\n${backupResult.note || ''}`);
+            setDownloadProgress(prev => {
+              const newProgress = { ...prev };
+              delete newProgress[song.id];
+              return newProgress;
+            });
+          }
+        } catch (backupErr) {
+          console.error('备份下载错误:', backupErr);
+          alert(`下载失败，请稍后重试: ${song.title} - ${song.artist}`);
+          setDownloadProgress(prev => {
+            const newProgress = { ...prev };
+            delete newProgress[song.id];
+            return newProgress;
+          });
+        }
       }
     } catch (err) {
       console.error('下载错误:', err);
