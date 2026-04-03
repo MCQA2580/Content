@@ -597,7 +597,7 @@ function App() {
                           disabled={loading || downloadProgress[song.id] !== undefined}
                           title="无损音质"
                         >
-                          无损音质 - 无损
+                          无损
                         </button>
                         <button 
                           className="btn btn-primary"
@@ -609,7 +609,7 @@ function App() {
                             <span className="download-progress">
                               {downloadProgress[song.id]}%
                             </span>
-                          ) : '高品质 - 320k'}
+                          ) : '320k'}
                         </button>
                         <button 
                           className="btn btn-primary"
@@ -617,7 +617,7 @@ function App() {
                           disabled={loading || downloadProgress[song.id] !== undefined}
                           title="中等品质"
                         >
-                          中等品质 - 192k
+                          192k
                         </button>
                         <button 
                           className="btn btn-primary"
@@ -625,7 +625,7 @@ function App() {
                           disabled={loading || downloadProgress[song.id] !== undefined}
                           title="标准品质"
                         >
-                          标准品质 - 128k
+                          128k
                         </button>
                       </div>
                     </div>
