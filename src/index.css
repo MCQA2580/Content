@@ -507,7 +507,7 @@ body {
 .card-left {
   display: flex;
   flex-direction: column;
-  width: 350px;
+  width: 400px;
   flex-shrink: 0;
   position: relative;
   z-index: 10;
@@ -735,7 +735,7 @@ body {
   border-left: 1px solid var(--border-color);
   background-color: rgba(102, 126, 234, 0.05);
   flex: 1;
-  min-width: 400px;
+  min-width: 350px;
   display: flex;
   flex-direction: column;
   justify-content: center;
