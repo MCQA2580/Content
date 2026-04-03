@@ -506,7 +506,7 @@ body {
 .card-left {
   display: flex;
   flex-direction: column;
-  width: 320px;
+  width: 300px;
   flex-shrink: 0;
 }
 
