@@ -192,6 +192,9 @@ function App() {
         [song.id]: 0
       }));
       
+      // 计算音质标签
+      const quality = bitrate === 999 ? '无损' : `${bitrate}k`;
+      
       // 尝试外部 API
       console.log('[下载] 获取URL，歌曲ID:', song.id, '比特率:', bitrate);
       const response = await fetch(`https://api.qijieya.cn/meting/?type=song&id=${song.id}&br=${bitrate}`);
@@ -209,7 +212,7 @@ function App() {
           // 创建下载链接
           const link = document.createElement('a');
           link.href = audioUrl;
-          link.download = `${song.title} - ${song.artist} (${bitrate}k).mp3`;
+          link.download = `${song.title} - ${song.artist} (${quality}).mp3`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -236,7 +239,7 @@ function App() {
           }, 3000);
         }, 1000);
         
-        alert(`开始下载: ${song.title} - ${song.artist} (${bitrate}k)`);
+        alert(`开始下载: ${song.title} - ${song.artist} (${quality})`);
         } catch (audioErr) {
           console.error('获取音频 URL 错误:', audioErr);
           alert('获取音频失败，请稍后重试');
@@ -260,7 +263,7 @@ function App() {
             // 创建下载链接
             const link = document.createElement('a');
             link.href = httpsUrl;
-            link.download = `${song.title} - ${song.artist} (${bitrate}k).mp3`;
+            link.download = `${song.title} - ${song.artist} (${quality}).mp3`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -282,7 +285,7 @@ function App() {
               }, 3000);
             }, 1000);
             
-            alert(`开始下载: ${song.title} - ${song.artist} (${bitrate}k)`);
+            alert(`开始下载: ${song.title} - ${song.artist} (${quality})`);
           } else {
             console.error('获取下载链接失败:', backupResult.error);
             alert(`无法获取下载链接: ${song.title} - ${song.artist}\n${backupResult.note || ''}`);
@@ -590,23 +593,39 @@ function App() {
                       <div className="download-options">
                         <button 
                           className="btn btn-primary"
+                          onClick={() => handleDownload(song, 999)}
+                          disabled={loading || downloadProgress[song.id] !== undefined}
+                          title="无损音质"
+                        >
+                          无损音质 - 无损
+                        </button>
+                        <button 
+                          className="btn btn-primary"
                           onClick={() => handleDownload(song, 320)}
                           disabled={loading || downloadProgress[song.id] !== undefined}
-                          title="高品质 (320k)"
+                          title="高品质"
                         >
                           {downloadProgress[song.id] !== undefined ? (
                             <span className="download-progress">
                               {downloadProgress[song.id]}%
                             </span>
-                          ) : '320k'}
+                          ) : '高品质 - 320k'}
+                        </button>
+                        <button 
+                          className="btn btn-primary"
+                          onClick={() => handleDownload(song, 192)}
+                          disabled={loading || downloadProgress[song.id] !== undefined}
+                          title="中等品质"
+                        >
+                          中等品质 - 192k
                         </button>
                         <button 
                           className="btn btn-primary"
                           onClick={() => handleDownload(song, 128)}
                           disabled={loading || downloadProgress[song.id] !== undefined}
-                          title="标准品质 (128k)"
+                          title="标准品质"
                         >
-                          128k
+                          标准品质 - 128k
                         </button>
                       </div>
                     </div>

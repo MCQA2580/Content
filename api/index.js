@@ -77,6 +77,7 @@ module.exports = async (req, res) => {
     // 获取音乐URL
     if (path === '/api/song/url' || path === '/_/backend/api/song/url') {
       const id = url.searchParams.get('id');
+      const br = url.searchParams.get('br');
       
       if (!id) {
         res.writeHead(400, headers);
@@ -85,12 +86,25 @@ module.exports = async (req, res) => {
       }
 
       try {
-        console.log('[song_url] 开始获取URL, id:', id);
+        console.log('[song_url] 开始获取URL, id:', id, '比特率:', br);
         
-        let result = await NeteaseCloudMusicApi.song_url({ id: id });
+        // 处理比特率参数
+        let bitrate = 320000; // 默认 320k
+        if (br === '128') {
+          bitrate = 128000;
+        } else if (br === '192') {
+          bitrate = 192000;
+        } else if (br === '320') {
+          bitrate = 320000;
+        } else if (br === '999') {
+          bitrate = 999000; // 无损音质
+        }
+        
+        let result = await NeteaseCloudMusicApi.song_url({ id: id, br: bitrate });
         let songUrl = result.body.data?.[0]?.url;
         
-        if (!songUrl) {
+        if (!songUrl && bitrate === 320000) {
+          // 如果高比特率失败，尝试低比特率
           result = await NeteaseCloudMusicApi.song_url({ id: id, br: 128000 });
           songUrl = result.body.data?.[0]?.url;
         }

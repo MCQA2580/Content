@@ -46,14 +46,14 @@ router.get('/api/search', async (req, res) => {
 
 // 获取音乐URL API
 router.get('/api/song/url', async (req, res) => {
-  const { id } = req.query;
+  const { id, br } = req.query;
   
   if (!id) {
     return res.status(400).json({ error: '歌曲ID不能为空' });
   }
   
   try {
-    console.log('[song_url] 开始获取URL, id:', id);
+    console.log('[song_url] 开始获取URL, id:', id, '比特率:', br);
     
     let songUrl = null;
     let songInfo = null;
@@ -66,26 +66,33 @@ router.get('/api/song/url', async (req, res) => {
       console.log('[song_url] 获取歌曲信息失败');
     }
     
-    // 第二步：尝试网易云音乐，多个比特率
-    const bitrates = [null, 320000, 192000, 128000];
-    let result = null;
+    // 第二步：尝试网易云音乐
+    let bitrate = 320000; // 默认 320k
+    if (br === '128') {
+      bitrate = 128000;
+    } else if (br === '192') {
+      bitrate = 192000;
+    } else if (br === '320') {
+      bitrate = 320000;
+    } else if (br === '999') {
+      bitrate = 999000; // 无损音质
+    }
     
-    for (let i = 0; i < bitrates.length; i++) {
-      const br = bitrates[i];
-      const options = { id: id };
-      if (br) {
-        options.br = br;
-      }
-      
-      console.log(`[song_url] 尝试网易云比特率: ${br || '原音质'}`);
-      result = await NeteaseCloudMusicApi.song_url(options);
+    console.log(`[song_url] 尝试网易云比特率: ${bitrate}`);
+    let result = await NeteaseCloudMusicApi.song_url({ id: id, br: bitrate });
+    songUrl = result.body.data?.[0]?.url;
+    
+    if (!songUrl && bitrate === 320000) {
+      // 如果高比特率失败，尝试低比特率
+      console.log('[song_url] 高比特率失败，尝试低比特率');
+      result = await NeteaseCloudMusicApi.song_url({ id: id, br: 128000 });
       songUrl = result.body.data?.[0]?.url;
-      
-      if (songUrl) {
-        console.log(`[song_url] 网易云成功获取URL (比特率: ${br || '原音质'}):`, songUrl);
-        res.json({ success: true, url: songUrl, platform: '网易云音乐' });
-        return;
-      }
+    }
+    
+    if (songUrl) {
+      console.log(`[song_url] 网易云成功获取URL:`, songUrl);
+      res.json({ success: true, url: songUrl, platform: '网易云音乐' });
+      return;
     }
     
     // 第三步：如果网易云失败，尝试其他平台 fallback
