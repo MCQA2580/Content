@@ -99,24 +99,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.ai-settings-btn {
-  background: linear-gradient(135deg, #3c64ff 0%, #2a4bff 100%);
-  color: white;
-  border: none;
-  padding: 0.375rem 1rem;
-  border-radius: 1.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  box-shadow: 0 4px 12px rgba(60, 100, 255, 0.3);
-}
 
-.ai-settings-btn:hover {
-  background: linear-gradient(135deg, #4c74ff 0%, #3a5bff 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(60, 100, 255, 0.4);
-}
 
 .navbar-left {
   display: flex;
@@ -683,21 +666,7 @@ body {
   text-align: center;
 }
 
-.ai-options {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-top: 0.5rem;
-  flex-wrap: wrap;
-}
 
-.ai-options .btn {
-  flex: 1;
-  min-width: 90px;
-  text-align: center;
-  font-size: 0.75rem;
-  padding: 0.5rem 0.75rem;
-}
 
 /* 响应式设计 */
 @media (max-width: 768px) {
