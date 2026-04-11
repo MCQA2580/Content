@@ -3,6 +3,8 @@ import APIParser from './api-parser';
 import BackendStatusIndicator from './components/BackendStatusIndicator';
 import CoverImage from './components/CoverImage';
 import { API_BASE_URL } from './config';
+import AIService from './ai-service';
+import AIServiceConfig from './ai-config';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +21,10 @@ function App() {
   const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'online', 'offline'
   const [lastHeartbeat, setLastHeartbeat] = useState(null);
   const [activatingBackend, setActivatingBackend] = useState(false);
+  const [aiService, setAiService] = useState(null);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiSuggestions, setAiSuggestions] = useState({}); // 存储AI生成的内容
 
   // 后端健康检查
   const checkBackendHealth = async () => {
@@ -87,6 +93,21 @@ function App() {
 
   // 组件加载时启动健康检查和心跳机制
   useEffect(() => {
+    // 初始化AI服务
+    const initializeAiService = () => {
+      // 从本地存储获取AI API密钥（如果有的话）
+      const savedApiKey = localStorage.getItem('ai_api_key');
+      if (savedApiKey) {
+        const aiSvc = new AIService(savedApiKey);
+        setAiService(aiSvc);
+        setAiEnabled(true);
+        setAiApiKey(savedApiKey);
+        console.log('AI服务已初始化');
+      } else {
+        console.log('未找到AI API密钥，AI功能不可用');
+      }
+    };
+
     // 立即检查一次
     checkBackendHealth();
     
@@ -102,6 +123,9 @@ function App() {
         navbar.style.display = 'none';
       }
     }, 3000);
+    
+    // 初始化AI服务
+    initializeAiService();
     
     // 清理函数
     return () => {
@@ -190,6 +214,145 @@ function App() {
     e.preventDefault();
     if (searchQuery.trim()) {
       searchMusic(searchQuery.trim());
+    }
+  };
+
+  // AI服务相关函数
+  // 保存AI API密钥
+  const saveAIKey = (apiKey) => {
+    if (apiKey) {
+      localStorage.setItem('ai_api_key', apiKey);
+      const aiSvc = new AIService(apiKey);
+      setAiService(aiSvc);
+      setAiEnabled(true);
+      setAiApiKey(apiKey);
+      alert('AI API密钥已保存，AI功能已启用');
+    } else {
+      localStorage.removeItem('ai_api_key');
+      setAiService(null);
+      setAiEnabled(false);
+      setAiApiKey('');
+      alert('AI API密钥已清除，AI功能已禁用');
+    }
+  };
+
+  // 生成音乐描述
+  const generateMusicDescription = async (song) => {
+    if (!aiService || !aiEnabled) {
+      alert('AI功能未启用，请先设置AI API密钥');
+      return;
+    }
+
+    try {
+      const result = await aiService.generateMusicDescription({
+        name: song.name,
+        artist: song.artist,
+        album: song.album,
+        duration: song.duration
+      });
+
+      if (result.success) {
+        setAiSuggestions(prev => ({
+          ...prev,
+          [`${song.id}_description`]: result.description
+        }));
+        alert('音乐描述已生成');
+      } else {
+        alert('生成音乐描述失败: ' + result.error);
+      }
+    } catch (error) {
+      console.error('生成音乐描述错误:', error);
+      alert('生成音乐描述失败，请检查AI API密钥是否正确');
+    }
+  };
+
+  // 翻译歌词
+  const translateLyrics = async (songId, lyrics) => {
+    if (!aiService || !aiEnabled) {
+      alert('AI功能未启用，请先设置AI API密钥');
+      return;
+    }
+
+    if (!lyrics) {
+      alert('请先获取歌词');
+      return;
+    }
+
+    try {
+      const result = await aiService.translateLyrics(lyrics);
+
+      if (result.success) {
+        setAiSuggestions(prev => ({
+          ...prev,
+          [`${songId}_translated_lyrics`]: result.translatedLyrics
+        }));
+        alert('歌词翻译已完成');
+      } else {
+        alert('翻译歌词失败: ' + result.error);
+      }
+    } catch (error) {
+      console.error('翻译歌词错误:', error);
+      alert('翻译歌词失败，请检查AI API密钥是否正确');
+    }
+  };
+
+  // 推荐相似歌曲
+  const recommendSimilarSongs = async (song) => {
+    if (!aiService || !aiEnabled) {
+      alert('AI功能未启用，请先设置AI API密钥');
+      return;
+    }
+
+    try {
+      const result = await aiService.recommendSimilarSongs({
+        name: song.name,
+        artist: song.artist,
+        album: song.album
+      });
+
+      if (result.success) {
+        setAiSuggestions(prev => ({
+          ...prev,
+          [`${song.id}_recommendations`]: result.recommendations
+        }));
+        alert('相似歌曲推荐已生成');
+      } else {
+        alert('推荐相似歌曲失败: ' + result.error);
+      }
+    } catch (error) {
+      console.error('推荐相似歌曲错误:', error);
+      alert('推荐相似歌曲失败，请检查AI API密钥是否正确');
+    }
+  };
+
+  // 分析歌曲情感
+  const analyzeSongEmotion = async (song, lyrics) => {
+    if (!aiService || !aiEnabled) {
+      alert('AI功能未启用，请先设置AI API密钥');
+      return;
+    }
+
+    try {
+      const result = await aiService.analyzeSongEmotion({
+        name: song.name,
+        artist: song.artist,
+        album: song.album,
+        duration: song.duration,
+        lyrics: lyrics || '无歌词信息'
+      });
+
+      if (result.success) {
+        setAiSuggestions(prev => ({
+          ...prev,
+          [`${song.id}_emotion`]: result.emotion
+        }));
+        alert('歌曲情感分析已完成');
+      } else {
+        alert('分析歌曲情感失败: ' + result.error);
+      }
+    } catch (error) {
+      console.error('分析歌曲情感错误:', error);
+      alert('分析歌曲情感失败，请检查AI API密钥是否正确');
     }
   };
 
@@ -507,6 +670,17 @@ function App() {
             <span className="feature-badge">QQ音乐</span>
             <span className="feature-badge">酷狗音乐</span>
             <span className="feature-badge">虾米音乐</span>
+            <button 
+              className="ai-settings-btn" 
+              onClick={() => {
+                const apiKey = prompt('请输入AI API密钥（支持OpenAI、Anthropic、Google Gemini等）:');
+                if (apiKey !== null) {
+                  saveAIKey(apiKey);
+                }
+              }}
+            >
+              AI设置
+            </button>
           </div>
         </div>
       </nav>
@@ -631,6 +805,42 @@ function App() {
                             title="标准品质"
                           >
                             128k
+                          </button>
+                        </div>
+                        
+                        {/* AI功能按钮 */}
+                        <div className="ai-options">
+                          <button 
+                            className="btn btn-secondary"
+                            onClick={() => generateMusicDescription(song)}
+                            disabled={loading}
+                            title="生成音乐描述"
+                          >
+                            音乐描述
+                          </button>
+                          <button 
+                            className="btn btn-secondary"
+                            onClick={() => translateLyrics(song.id, lyrics[song.id])}
+                            disabled={loading}
+                            title="翻译歌词"
+                          >
+                            翻译歌词
+                          </button>
+                          <button 
+                            className="btn btn-secondary"
+                            onClick={() => recommendSimilarSongs(song)}
+                            disabled={loading}
+                            title="推荐相似歌曲"
+                          >
+                            相似推荐
+                          </button>
+                          <button 
+                            className="btn btn-secondary"
+                            onClick={() => analyzeSongEmotion(song, lyrics[song.id])}
+                            disabled={loading}
+                            title="分析歌曲情感"
+                          >
+                            情感分析
                           </button>
                         </div>
                       </div>
